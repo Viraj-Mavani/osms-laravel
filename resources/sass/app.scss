@@ -1,0 +1,214 @@
+// ============================================================
+// OSMS Design System — Bootstrap 5 theme
+// Ported from the original Next.js globals.css (oklch tokens).
+// Primary = deep optical blue. Cool off-white page surface.
+// ============================================================
+
+// 1. Bootstrap functions (needed before variable overrides)
+@import "bootstrap/scss/functions";
+
+// 2. OSMS brand variable overrides ---------------------------
+$primary:        #004f75; // deep optical blue (oklch 0.38 0.14 220)
+$primary-rgb:    0, 79, 117;
+
+$body-bg:        #f4f6f9; // cool off-white page surface
+$body-color:     #1c2733; // near-black cool foreground
+
+$border-color:   #e2e6ec; // hairline border
+$secondary:      #eef1f5;
+
+$font-family-sans-serif: "Plus Jakarta Sans", "Inter", system-ui, -apple-system,
+  "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+$border-radius:    0.625rem;
+$border-radius-sm: 0.45rem;
+$border-radius-lg: 0.9rem;
+$border-radius-xl: 1.1rem;
+
+$card-border-color:        $border-color;
+$card-border-radius:       0.85rem;
+$card-cap-bg:              transparent;
+$card-box-shadow:          0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+
+$input-border-color:       $border-color;
+$input-focus-border-color: tint-color($primary, 40%);
+$input-btn-focus-color:    rgba($primary, 0.25);
+
+$link-decoration:          none;
+
+$enable-negative-margins:  true;
+
+// 3. Bootstrap core ------------------------------------------
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+@import "bootstrap/scss/root";
+@import "bootstrap/scss/reboot";
+@import "bootstrap/scss/type";
+@import "bootstrap/scss/images";
+@import "bootstrap/scss/containers";
+@import "bootstrap/scss/grid";
+@import "bootstrap/scss/tables";
+@import "bootstrap/scss/forms";
+@import "bootstrap/scss/buttons";
+@import "bootstrap/scss/transitions";
+@import "bootstrap/scss/dropdown";
+@import "bootstrap/scss/button-group";
+@import "bootstrap/scss/nav";
+@import "bootstrap/scss/navbar";
+@import "bootstrap/scss/card";
+@import "bootstrap/scss/breadcrumb";
+@import "bootstrap/scss/badge";
+@import "bootstrap/scss/alert";
+@import "bootstrap/scss/progress";
+@import "bootstrap/scss/list-group";
+@import "bootstrap/scss/close";
+@import "bootstrap/scss/modal";
+@import "bootstrap/scss/tooltip";
+@import "bootstrap/scss/popover";
+@import "bootstrap/scss/spinners";
+@import "bootstrap/scss/offcanvas";
+@import "bootstrap/scss/placeholders";
+@import "bootstrap/scss/helpers";
+@import "bootstrap/scss/utilities/api";
+
+// 4. Bootstrap Icons -----------------------------------------
+@import "bootstrap-icons/font/bootstrap-icons.css";
+
+// ============================================================
+// 5. OSMS custom layer
+// ============================================================
+:root {
+  --osms-primary: #{$primary};
+  --osms-muted: #6b7785;
+  --osms-accent: #e7eef4;
+  --osms-sidebar-bg: #f0f3f7;
+  --osms-amber: #b45309;
+  --osms-amber-bg: #fef3c7;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
+}
+
+.text-muted-foreground { color: var(--osms-muted) !important; }
+.font-display { letter-spacing: -0.02em; font-weight: 600; }
+
+// Buttery transitions on interactive elements (from original base layer)
+.btn, .form-control, .form-select, a,
+[role="button"], [role="tab"], [role="option"] {
+  transition: all 200ms ease-out;
+}
+.btn:active, [role="button"]:active { transform: scale(0.97); }
+
+// Glassmorphism panels
+.glass {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+// Hoverable card lift
+.card-lift { transition: transform 200ms ease-out, box-shadow 200ms ease-out; }
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+// Soft radial spotlight for auth/marketing pages
+.bg-spotlight {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0, 79, 117, 0.10), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(20, 120, 140, 0.08), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 0% 100%, rgba(0, 79, 117, 0.06), transparent 60%),
+    #f4f6f9;
+}
+
+// Fade-up entrance
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 500ms ease-out both; }
+
+// ---------- App shell layout ----------
+.app-shell { display: flex; min-height: 100vh; }
+.app-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--osms-sidebar-bg);
+  border-right: 1px solid var(--border-color, #e2e6ec);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.app-main { flex: 1; min-width: 0; }
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.55rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+}
+.sidebar-link:hover { background: var(--osms-accent); color: var(--osms-primary); }
+.sidebar-link.active { background: var(--osms-accent); color: var(--osms-primary); }
+.sidebar-link i { font-size: 1.05rem; }
+
+// Metric card tones
+.metric-card .metric-icon {
+  width: 2.5rem; height: 2.5rem; border-radius: 0.6rem;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.metric-card.tone-primary .metric-icon { background: var(--osms-accent); color: var(--osms-primary); }
+.metric-card.tone-amber .metric-icon { background: var(--osms-amber-bg); color: var(--osms-amber); }
+.metric-card.tone-default .metric-icon { background: #eef1f5; color: #64748b; }
+
+// Kanban
+.kanban-column {
+  background: #eef1f5;
+  border-radius: 0.85rem;
+  padding: 0.75rem;
+  min-height: 60vh;
+}
+.kanban-card { cursor: grab; }
+.kanban-card.sortable-ghost { opacity: 0.4; }
+
+// Uppercase section labels
+.section-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--osms-muted);
+}
+
+// Global search modal results
+.search-result-item { cursor: pointer; }
+.search-result-item:hover { background: var(--osms-accent); }
+
+// ---------- Print (thermal receipt + A4) ----------
+@media print {
+  .app-sidebar, .no-print, .btn { display: none !important; }
+  .app-main { width: 100% !important; }
+  body, .card, .glass { background: #fff !important; box-shadow: none !important; }
+  * { transition: none !important; animation: none !important; }
+  body { color: #000 !important; }
+}

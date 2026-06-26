@@ -1,0 +1,77 @@
+@extends('layouts.app')
+@section('title', $patient->name)
+
+@section('content')
+<div class="p-4 p-md-5">
+    <a href="{{ route('tenant.patients.index') }}"
+       class="d-inline-flex align-items-center gap-1 text-muted-foreground text-decoration-none mb-3" style="font-size:.8rem;">
+        <i class="bi bi-chevron-left"></i> Back to patients
+    </a>
+
+    {{-- Patient header --}}
+    <div class="glass card-lift rounded-4 p-4 mb-4 d-flex flex-column flex-md-row gap-3 align-items-md-end justify-content-between">
+        <div class="d-flex align-items-start gap-3">
+            <span class="d-inline-flex align-items-center justify-content-center rounded-4 bg-primary text-white"
+                  style="width:3.25rem;height:3.25rem;"><i class="bi bi-person fs-4"></i></span>
+            <div>
+                <h1 class="h3 fw-semibold font-display mb-1">{{ $patient->name }}</h1>
+                <div class="d-flex flex-wrap gap-3 text-muted-foreground" style="font-size:.85rem;">
+                    <span><i class="bi bi-telephone me-1"></i>{{ $patient->phone }}</span>
+                    @if ($patient->age)<span><i class="bi bi-calendar3 me-1"></i>{{ $patient->age }} yrs</span>@endif
+                    @if ($patient->gender)<span class="text-capitalize">{{ $patient->gender }}</span>@endif
+                    <span style="font-size:.78rem;">Added {{ $patient->created_at->format('d M Y') }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('tenant.eye-records.create', $patient) }}" class="btn btn-outline-primary">
+                <i class="bi bi-plus-lg me-1"></i> New eye record
+            </a>
+            <a href="{{ safe_route('tenant.orders.create', ['patient' => $patient->id]) }}" class="btn btn-primary">
+                <i class="bi bi-cart-plus me-1"></i> New order
+            </a>
+        </div>
+    </div>
+
+    <h2 class="h5 fw-semibold font-display mb-3">History</h2>
+
+    @if ($timeline->isEmpty())
+        <div class="border border-2 border-dashed rounded-4 bg-white bg-opacity-50 text-center p-5">
+            <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary mb-3"
+                  style="width:3rem;height:3rem;"><i class="bi bi-clipboard fs-4"></i></span>
+            <p class="fw-medium mb-1">No history yet</p>
+            <p class="text-muted-foreground mb-0">Add an eye record to begin this patient's timeline.</p>
+        </div>
+    @else
+        <div class="d-flex flex-column gap-3">
+            @foreach ($timeline as $item)
+                @if ($item['kind'] === 'rx')
+                    <x-eye-record-card :record="$item['data']" />
+                @else
+                    @php $o = $item['data']; @endphp
+                    <a href="{{ safe_route('tenant.orders.show', $o->id) }}"
+                       class="card card-lift border-0 shadow-sm rounded-4 text-decoration-none text-reset">
+                        <div class="card-body p-4 d-flex align-items-start justify-content-between gap-3">
+                            <div class="d-flex align-items-start gap-2">
+                                <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary"
+                                      style="width:2.25rem;height:2.25rem;"><i class="bi bi-cart3"></i></span>
+                                <div>
+                                    <p class="mb-0 fw-medium">Order ₹ {{ number_format($o->total_amount, 2) }}</p>
+                                    <p class="mb-0 text-muted-foreground" style="font-size:.78rem;">
+                                        Advance ₹ {{ number_format($o->advance_paid, 2) }} ·
+                                        Balance ₹ {{ number_format($o->balance_due, 2) }} ·
+                                        {{ $o->created_at->format('d M Y') }}
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="badge text-capitalize {{ $o->status === 'delivered' ? 'text-bg-light' : ($o->status === 'ready_for_pickup' ? 'text-bg-primary' : 'text-bg-secondary') }}">
+                                {{ str_replace('_', ' ', $o->status) }}
+                            </span>
+                        </div>
+                    </a>
+                @endif
+            @endforeach
+        </div>
+    @endif
+</div>
+@endsection

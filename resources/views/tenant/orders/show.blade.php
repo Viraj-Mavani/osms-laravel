@@ -1,0 +1,156 @@
+@extends('layouts.app')
+@section('title', 'Order receipt')
+
+@php
+    $rx = $order->eyeRecord;
+    $p = $order->patient;
+    $num = strtoupper(substr($order->id, 0, 8));
+    $nz = fn ($v) => is_null($v) ? '—' : $v;
+@endphp
+
+@section('content')
+<div>
+    {{-- On-screen header (hidden in print) --}}
+    <div class="p-4 p-md-5 pb-0 no-print">
+        <a href="{{ route('tenant.orders.index') }}"
+           class="d-inline-flex align-items-center gap-1 text-muted-foreground text-decoration-none mb-3" style="font-size:.8rem;">
+            <i class="bi bi-chevron-left"></i> Back to orders
+        </a>
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3">
+            <div>
+                <h1 class="h3 fw-semibold font-display mb-1">Order receipt</h1>
+                <p class="text-muted-foreground mb-0" style="font-size:.85rem;">
+                    #{{ $num }} · {{ $order->created_at->format('d M Y') }}
+                </p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge text-capitalize {{ $order->status === 'delivered' ? 'text-bg-light' : ($order->status === 'ready_for_pickup' ? 'text-bg-primary' : 'text-bg-secondary') }}">
+                    {{ str_replace('_', ' ', $order->status) }}
+                </span>
+                <a href="{{ route('tenant.orders.pdf', $order) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                </a>
+                <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Receipt --}}
+    <div class="mx-auto px-4 py-4 p-md-5" style="max-width:48rem;">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4 p-md-5">
+                {{-- Store header --}}
+                <div class="d-flex align-items-start justify-content-between gap-4 border-bottom pb-4 mb-4">
+                    <div class="d-flex align-items-start gap-3">
+                        @if ($tenant?->logo_url)
+                            <img src="{{ $tenant->logo_url }}" alt="{{ $tenant->store_name }}"
+                                 class="rounded-3 border object-fit-cover" style="width:3.5rem;height:3.5rem;">
+                        @else
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary text-white"
+                                  style="width:3.5rem;height:3.5rem;"><i class="bi bi-eye fs-4"></i></span>
+                        @endif
+                        <div>
+                            <h2 class="h5 fw-semibold font-display mb-1">{{ $tenant?->store_name ?? 'Optical Store' }}</h2>
+                            @if ($tenant?->address)
+                                <p class="text-muted-foreground mb-0" style="font-size:.78rem;">
+                                    <i class="bi bi-geo-alt me-1"></i>{{ $tenant->address }}
+                                </p>
+                            @endif
+                            @if ($tenant?->tax_id)
+                                <p class="text-muted-foreground mb-0" style="font-size:.78rem;">GSTIN: {{ $tenant->tax_id }}</p>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <p class="text-uppercase text-muted-foreground mb-0" style="font-size:.62rem;letter-spacing:.05em;">Receipt</p>
+                        <p class="font-monospace fw-medium mb-1">#{{ $num }}</p>
+                        <p class="text-muted-foreground mb-0" style="font-size:.78rem;">
+                            <i class="bi bi-calendar3 me-1"></i>{{ $order->created_at->format('d M Y') }}
+                        </p>
+                    </div>
+                </div>
+
+                {{-- Patient + Rx --}}
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="border rounded-3 bg-light bg-opacity-50 p-3 h-100">
+                            <p class="text-uppercase text-muted-foreground mb-1" style="font-size:.62rem;letter-spacing:.05em;">Patient</p>
+                            <p class="fw-semibold font-display mb-1">{{ $p?->name }}</p>
+                            <div class="text-muted-foreground" style="font-size:.78rem;">
+                                @if ($p?->phone)<p class="mb-0"><i class="bi bi-telephone me-1"></i>{{ $p->phone }}</p>@endif
+                                @if ($p?->age)<p class="mb-0">{{ $p->age }} years · {{ $p->gender ?? '—' }}</p>@endif
+                            </div>
+                        </div>
+                    </div>
+                    @if ($rx)
+                        <div class="col-md-6">
+                            <div class="border rounded-3 bg-light bg-opacity-50 p-3 h-100">
+                                <p class="text-uppercase text-muted-foreground mb-2" style="font-size:.62rem;letter-spacing:.05em;">Prescription</p>
+                                <table class="w-100" style="font-size:.78rem;">
+                                    <thead class="text-muted-foreground text-uppercase" style="font-size:.62rem;">
+                                        <tr><th></th><th>SPH</th><th>CYL</th><th>Axis</th><th>ADD</th><th>VA</th></tr>
+                                    </thead>
+                                    <tbody class="font-monospace">
+                                        <tr><td class="fw-semibold text-muted-foreground">OD</td>
+                                            <td>{{ $nz($rx->od_sph) }}</td><td>{{ $nz($rx->od_cyl) }}</td>
+                                            <td>{{ $nz($rx->od_axis) }}</td><td>{{ $nz($rx->od_add) }}</td><td>{{ $rx->od_va ?? '—' }}</td></tr>
+                                        <tr><td class="fw-semibold text-muted-foreground">OS</td>
+                                            <td>{{ $nz($rx->os_sph) }}</td><td>{{ $nz($rx->os_cyl) }}</td>
+                                            <td>{{ $nz($rx->os_axis) }}</td><td>{{ $nz($rx->os_add) }}</td><td>{{ $rx->os_va ?? '—' }}</td></tr>
+                                    </tbody>
+                                </table>
+                                @if (! is_null($rx->pd))
+                                    <p class="mb-0 mt-2" style="font-size:.78rem;">
+                                        <span class="text-muted-foreground">PD:</span> <span class="font-monospace">{{ $rx->pd }} mm</span>
+                                    </p>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Items --}}
+                <p class="text-uppercase text-muted-foreground mb-2" style="font-size:.62rem;letter-spacing:.05em;">Items</p>
+                <table class="table mb-4" style="font-size:.88rem;">
+                    <thead class="text-muted-foreground" style="font-size:.75rem;">
+                        <tr><th>Item</th><th>SKU</th><th class="text-end">Qty</th><th class="text-end">Unit</th><th class="text-end">Total</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($order->items as $it)
+                            <tr>
+                                <td>{{ $it->inventory?->brand ?? '—' }} <span class="text-muted-foreground">{{ $it->inventory?->model_name }}</span></td>
+                                <td class="font-monospace text-muted-foreground" style="font-size:.75rem;">{{ $it->inventory?->sku ?? '—' }}</td>
+                                <td class="text-end">{{ $it->quantity }}</td>
+                                <td class="text-end font-monospace">₹ {{ number_format($it->unit_price, 2) }}</td>
+                                <td class="text-end font-monospace">₹ {{ number_format($it->unit_price * $it->quantity, 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+
+                {{-- Totals --}}
+                <div class="ms-auto" style="max-width:18rem;">
+                    <div class="d-flex justify-content-between mb-1" style="font-size:.9rem;">
+                        <span class="text-muted-foreground">Subtotal</span>
+                        <span class="font-monospace">₹ {{ number_format($order->total_amount, 2) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2" style="font-size:.9rem;">
+                        <span class="text-muted-foreground">Advance paid</span>
+                        <span class="font-monospace">₹ {{ number_format($order->advance_paid, 2) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-top pt-2 fw-semibold">
+                        <span class="font-display">Balance due</span>
+                        <span class="font-display {{ $order->balance_due > 0 ? 'text-danger' : '' }}">₹ {{ number_format($order->balance_due, 2) }}</span>
+                    </div>
+                </div>
+
+                <p class="text-center text-muted-foreground border-top mt-4 pt-3 mb-0" style="font-size:.78rem;">
+                    Thank you for shopping with {{ $tenant?->store_name ?? 'us' }}. Please retain this receipt for any future visits.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection

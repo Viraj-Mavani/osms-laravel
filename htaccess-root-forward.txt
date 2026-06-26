@@ -1,0 +1,19 @@
+# OSMS — root .htaccess forwarder
+# Use ONLY if you cannot point the domain's document root at the Laravel /public folder.
+# Place this file's contents in a `.htaccess` at the web root that contains the project,
+# so all requests are routed into Laravel's public/ directory.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Already inside /public? do nothing.
+    RewriteCond %{REQUEST_URI} !^/public/
+
+    # Route everything into public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Block direct access to sensitive files just in case.
+<FilesMatch "^(\.env|composer\.(json|lock)|package\.json|artisan)$">
+    Require all denied
+</FilesMatch>
