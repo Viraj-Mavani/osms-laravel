@@ -90,9 +90,16 @@
 
         {{-- Ledger --}}
         <div class="tab-pane fade" id="tab-ledger">
-            <div class="d-flex justify-content-end mb-2">
+            <div class="d-flex justify-content-end gap-2 mb-2">
                 <a href="{{ route('tenant.analytics.ledger.export', ['from' => $fromStr, 'to' => $toStr]) }}"
                    class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-excel me-1"></i> Export Excel</a>
+                @if ($ledger->count() >= 50 && ! $showAllLedger)
+                    <a href="{{ route('tenant.analytics.index', ['from' => $fromStr, 'to' => $toStr, 'ledger_all' => 1]) }}"
+                       class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-repeat me-1"></i> Show all</a>
+                @elseif ($showAllLedger)
+                    <a href="{{ route('tenant.analytics.index', ['from' => $fromStr, 'to' => $toStr]) }}"
+                       class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-repeat me-1"></i> Show less</a>
+                @endif
             </div>
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="table-responsive">
@@ -122,6 +129,17 @@
 
         {{-- Pending dues --}}
         <div class="tab-pane fade" id="tab-dues">
+            @if ($dues->count() >= 50 || $showAllDues)
+                <div class="d-flex justify-content-end mb-2">
+                    @if ($dues->count() >= 50 && ! $showAllDues)
+                        <a href="{{ route('tenant.analytics.index', ['from' => $fromStr, 'to' => $toStr, 'dues_all' => 1]) }}"
+                           class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-repeat me-1"></i> Show all</a>
+                    @elseif ($showAllDues)
+                        <a href="{{ route('tenant.analytics.index', ['from' => $fromStr, 'to' => $toStr]) }}"
+                           class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-repeat me-1"></i> Show less</a>
+                    @endif
+                </div>
+            @endif
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="table-responsive">
                     <table class="table align-middle mb-0">

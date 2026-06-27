@@ -76,6 +76,23 @@ class Phase2PatientTest extends TestCase
         $this->actingAs($u2)->get(route('tenant.patients.show', $patient))->assertNotFound();
     }
 
+    public function test_patient_index_is_paginated(): void
+    {
+        $user = $this->storeUser();
+        $this->actingAs($user);
+        for ($i = 0; $i < 55; $i++) {
+            Patient::create(['name' => 'Patient ' . $i, 'phone' => '9000000' . str_pad((string) $i, 3, '0', STR_PAD_LEFT)]);
+        }
+
+        $page1 = $this->actingAs($user)->get(route('tenant.patients.index'));
+        $page1->assertOk();
+        $this->assertCount(50, $page1->viewData('patients'));
+        $this->assertSame(55, $page1->viewData('patients')->total());
+
+        $this->actingAs($user)->get(route('tenant.patients.index', ['page' => 2]))
+            ->assertOk()->assertViewHas('patients', fn ($p) => $p->count() === 5);
+    }
+
     public function test_can_add_eye_record_and_see_it_on_profile(): void
     {
         $user = $this->storeUser();

@@ -32,8 +32,8 @@ class InventoryController extends Controller
             ->when($stock === 'low', fn ($query) => $query->whereColumn('stock_qty', '<=', 'min_alert_qty'))
             ->when($stock === 'out', fn ($query) => $query->where('stock_qty', 0))
             ->orderBy('brand')
-            ->limit(200)
-            ->get();
+            ->paginate(50)
+            ->withQueryString();
 
         return view('tenant.inventory.index', compact('items', 'q', 'type', 'stock'));
     }

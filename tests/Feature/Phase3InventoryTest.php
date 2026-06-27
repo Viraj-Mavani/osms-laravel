@@ -102,6 +102,27 @@ class Phase3InventoryTest extends TestCase
             ->assertOk()->assertSee('Low')->assertDontSee('Healthy');
     }
 
+    public function test_inventory_index_is_paginated(): void
+    {
+        $user = $this->storeUser();
+        $this->actingAs($user);
+        for ($i = 0; $i < 55; $i++) {
+            Inventory::create([
+                'sku' => 'SKU-' . $i, 'barcode' => (string) (100000000000 + $i), 'item_type' => 'frame',
+                'brand' => 'Brand', 'model_name' => 'M' . $i, 'cost_price' => 1,
+                'selling_price' => 2, 'stock_qty' => 5, 'min_alert_qty' => 1,
+            ]);
+        }
+
+        $page1 = $this->actingAs($user)->get(route('tenant.inventory.index'));
+        $page1->assertOk();
+        $this->assertCount(50, $page1->viewData('items'));
+        $this->assertSame(55, $page1->viewData('items')->total());
+
+        $this->actingAs($user)->get(route('tenant.inventory.index', ['page' => 2]))
+            ->assertOk()->assertViewHas('items', fn ($p) => $p->count() === 5);
+    }
+
     public function test_update_item(): void
     {
         $user = $this->storeUser();

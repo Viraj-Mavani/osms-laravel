@@ -23,8 +23,8 @@ class PatientController extends Controller
                 });
             })
             ->latest()
-            ->limit(150)
-            ->get();
+            ->paginate(50)
+            ->withQueryString();
 
         return view('tenant.patients.index', compact('patients', 'search'));
     }

@@ -84,6 +84,10 @@
                 </table>
             </div>
         </div>
+
+        @if ($items->hasPages())
+            <div class="mt-3">{{ $items->links() }}</div>
+        @endif
     @else
         <div class="glass card-lift rounded-4 text-center p-5">
             <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary mb-3"

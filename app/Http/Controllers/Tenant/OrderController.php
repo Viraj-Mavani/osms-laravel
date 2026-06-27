@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Models\EyeRecord;
 use App\Models\Inventory;
 use App\Models\Order;
 use App\Models\Patient;
@@ -53,6 +54,13 @@ class OrderController extends Controller
 
         // Ensure the patient belongs to this tenant (global scope enforces it).
         Patient::findOrFail($validated['patient_id']);
+
+        // If a prescription is attached, it must belong to this tenant *and* this
+        // patient — the `exists` rule above is unscoped, so re-check it here.
+        if (! empty($validated['eye_record_id'])) {
+            EyeRecord::where('patient_id', $validated['patient_id'])
+                ->findOrFail($validated['eye_record_id']);
+        }
 
         $order = DB::transaction(function () use ($validated) {
             // Total quantity requested per item (collapses duplicate lines so the

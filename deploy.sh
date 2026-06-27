@@ -2,6 +2,18 @@
 # OSMS redeploy script for Hostinger (run from the project root via SSH).
 set -e
 
+# Pre-flight checks: verify critical env vars before deployment.
+echo "→ Checking deployment readiness..."
+if [ "$APP_ENV" != "production" ]; then
+  echo "⚠ APP_ENV is '$APP_ENV', not 'production'. Update .env before deploy."
+fi
+if [ "$APP_DEBUG" != "false" ]; then
+  echo "⚠ APP_DEBUG is '$APP_DEBUG', not 'false'. Stack traces will leak in production."
+fi
+if [ -z "$RAZORPAY_KEY" ] || [ -z "$RAZORPAY_SECRET" ]; then
+  echo "! RAZORPAY_KEY and RAZORPAY_SECRET are not set. Billing will be disabled."
+fi
+
 echo "→ Pulling latest..."
 git pull origin main
 

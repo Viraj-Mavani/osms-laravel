@@ -67,18 +67,20 @@ class AnalyticsController extends Controller
             ->map(fn ($v, $brand) => ['brand' => $brand] + $v)
             ->sortByDesc('revenue')->take(10)->values();
 
-        // Ledger — all orders in range
+        // Ledger — all orders in range (default limit to 50; allow "show all" via query param).
+        $showAllLedger = $request->boolean('ledger_all');
         $ledger = Order::with('patient:id,name')
             ->whereBetween('created_at', [$from, $to])
             ->latest()
-            ->limit(200)
+            ->when(! $showAllLedger, fn ($q) => $q->limit(50))
             ->get();
 
-        // Pending dues — all outstanding balances (any date)
+        // Pending dues — all outstanding balances (default limit to 50; allow "show all" via query param).
+        $showAllDues = $request->boolean('dues_all');
         $dues = Order::with('patient:id,name,phone')
             ->where('balance_due', '>', 0)
             ->orderByDesc('balance_due')
-            ->limit(100)
+            ->when(! $showAllDues, fn ($q) => $q->limit(50))
             ->get();
 
         $stats = compact('revenue', 'cogs', 'profit', 'margin', 'ordersCount');
@@ -86,7 +88,7 @@ class AnalyticsController extends Controller
         $toStr = $to->format('Y-m-d');
 
         return view('tenant.analytics.index', compact(
-            'stats', 'topBrands', 'ledger', 'dues', 'fromStr', 'toStr',
+            'stats', 'topBrands', 'ledger', 'dues', 'fromStr', 'toStr', 'showAllLedger', 'showAllDues',
         ));
     }
 

@@ -125,6 +125,29 @@ class Phase4OrderTest extends TestCase
         $this->assertEquals(999, Order::first()->total_amount);
     }
 
+    public function test_cannot_attach_another_tenants_eye_record_to_an_order(): void
+    {
+        // Another tenant with its own patient + eye record.
+        $other = Tenant::create(['store_name' => 'Other']);
+        $otherUser = User::factory()->create(['tenant_id' => $other->id, 'role' => 'store_admin']);
+        $this->actingAs($otherUser);
+        $otherPatient = Patient::create(['name' => 'Theirs', 'phone' => '222']);
+        $foreignRecord = $otherPatient->eyeRecords()->create(['tenant_id' => $other->id, 'od_sph' => -1]);
+
+        // Our tenant tries to reference the foreign eye record on a new order.
+        $this->actingAs($this->user);
+        $patient = Patient::create(['name' => 'Ours', 'phone' => '111']);
+        $item = $this->makeItem(100, 10);
+
+        $this->actingAs($this->user)->post(route('tenant.orders.store'), [
+            'patient_id' => $patient->id,
+            'eye_record_id' => $foreignRecord->id,
+            'items' => [['inventory_id' => $item->id, 'quantity' => 1]],
+        ])->assertNotFound();
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
     public function test_order_requires_items(): void
     {
         $this->actingAs($this->user);
