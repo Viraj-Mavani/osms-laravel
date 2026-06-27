@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -53,13 +54,41 @@ class OrderController extends Controller
         // Ensure the patient belongs to this tenant (global scope enforces it).
         Patient::findOrFail($validated['patient_id']);
 
-        $order = DB::transaction(function () use ($validated, $request) {
+        $order = DB::transaction(function () use ($validated) {
+            // Total quantity requested per item (collapses duplicate lines so the
+            // stock guard can't be bypassed by splitting one item across two rows).
+            $wanted = [];
+            foreach ($validated['items'] as $line) {
+                $id = $line['inventory_id'];
+                $wanted[$id] = ($wanted[$id] ?? 0) + (int) $line['quantity'];
+            }
+
+            // Load + lock each item once. The tenant scope still applies, so a
+            // cross-tenant inventory_id simply won't be found (404 below).
+            $inventories = Inventory::lockForUpdate()
+                ->findMany(array_keys($wanted))
+                ->keyBy('id');
+
+            // Guard against overselling before we mutate anything.
+            foreach ($wanted as $id => $qty) {
+                $inv = $inventories->get($id);
+
+                if (! $inv) {
+                    abort(404);
+                }
+
+                if ($qty > $inv->stock_qty) {
+                    throw ValidationException::withMessages([
+                        'items' => "Only {$inv->stock_qty} × {$inv->brand} {$inv->model_name} in stock (requested {$qty}).",
+                    ]);
+                }
+            }
+
+            // Build line items with the price resolved server-side (never trust the client).
             $total = 0;
             $lines = [];
-
             foreach ($validated['items'] as $line) {
-                // Price + tenant ownership resolved server-side (never trust the client).
-                $inv = Inventory::findOrFail($line['inventory_id']);
+                $inv = $inventories->get($line['inventory_id']);
                 $qty = (int) $line['quantity'];
                 $unit = (float) $inv->selling_price;
                 $total += $unit * $qty;
@@ -77,6 +106,11 @@ class OrderController extends Controller
             ]);
 
             $order->items()->createMany($lines);
+
+            // Draw down stock now that the order is committed.
+            foreach ($wanted as $id => $qty) {
+                $inventories->get($id)->decrement('stock_qty', $qty);
+            }
 
             return $order;
         });

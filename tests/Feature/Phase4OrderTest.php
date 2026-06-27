@@ -60,6 +60,56 @@ class Phase4OrderTest extends TestCase
         $this->assertDatabaseCount('order_items', 1);
     }
 
+    public function test_creating_an_order_decrements_stock(): void
+    {
+        $this->actingAs($this->user);
+        $patient = Patient::create(['name' => 'Rahul', 'phone' => '111']);
+        $item = $this->makeItem(250, 10);
+
+        $this->actingAs($this->user)->post(route('tenant.orders.store'), [
+            'patient_id' => $patient->id,
+            'items' => [['inventory_id' => $item->id, 'quantity' => 3]],
+        ])->assertRedirect();
+
+        $this->assertSame(7, $item->fresh()->stock_qty); // 10 - 3
+    }
+
+    public function test_overselling_is_rejected_and_nothing_is_written(): void
+    {
+        $this->actingAs($this->user);
+        $patient = Patient::create(['name' => 'Rahul', 'phone' => '111']);
+        $item = $this->makeItem(250, 2);
+
+        $this->actingAs($this->user)->post(route('tenant.orders.store'), [
+            'patient_id' => $patient->id,
+            'items' => [['inventory_id' => $item->id, 'quantity' => 5]],
+        ])->assertSessionHasErrors('items');
+
+        // Transaction rolled back: no order, no items, stock untouched.
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('order_items', 0);
+        $this->assertSame(2, $item->fresh()->stock_qty);
+    }
+
+    public function test_overselling_via_duplicate_lines_is_rejected(): void
+    {
+        $this->actingAs($this->user);
+        $patient = Patient::create(['name' => 'Rahul', 'phone' => '111']);
+        $item = $this->makeItem(250, 3);
+
+        // Two lines for the same item that together exceed stock (3): 2 + 2 = 4.
+        $this->actingAs($this->user)->post(route('tenant.orders.store'), [
+            'patient_id' => $patient->id,
+            'items' => [
+                ['inventory_id' => $item->id, 'quantity' => 2],
+                ['inventory_id' => $item->id, 'quantity' => 2],
+            ],
+        ])->assertSessionHasErrors('items');
+
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertSame(3, $item->fresh()->stock_qty);
+    }
+
     public function test_unit_price_is_resolved_server_side(): void
     {
         $this->actingAs($this->user);
