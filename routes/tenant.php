@@ -18,7 +18,7 @@ use App\Http\Controllers\Tenant\SearchController;
 use Illuminate\Support\Facades\Route;
 
 // ---- Global search (Cmd+K) ----
-Route::get('search', SearchController::class)->name('search');
+Route::middleware('throttle:120,1')->get('search', SearchController::class)->name('search');
 
 // ---- Patients ----
 Route::get('patients', [PatientController::class, 'index'])->name('patients.index');
@@ -32,7 +32,7 @@ Route::post('patients/{patient}/records', [EyeRecordController::class, 'store'])
 
 // ---- Inventory ----
 Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
-Route::get('inventory/scan', [InventoryController::class, 'scan'])->name('inventory.scan');
+Route::middleware('throttle:120,1')->get('inventory/scan', [InventoryController::class, 'scan'])->name('inventory.scan');
 Route::get('inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
 Route::post('inventory', [InventoryController::class, 'store'])->name('inventory.store');
 Route::get('inventory/{inventory}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
@@ -45,7 +45,7 @@ Route::post('orders', [OrderController::class, 'store'])->name('orders.store');
 Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
 Route::get('orders/{order}/pdf', [OrderController::class, 'pdf'])->name('orders.pdf');
-Route::get('patients/{patient}/eye-records', [OrderController::class, 'eyeRecords'])->name('patients.eye-records');
+Route::middleware('throttle:120,1')->get('patients/{patient}/eye-records', [OrderController::class, 'eyeRecords'])->name('patients.eye-records');
 
 // ---- Analytics (store admins + superadmin only) ----
 Route::middleware('role:store_admin,superadmin')->group(function () {

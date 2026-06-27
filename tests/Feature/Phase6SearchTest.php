@@ -60,4 +60,20 @@ class Phase6SearchTest extends TestCase
         $this->actingAs($otherUser)->getJson(route('tenant.search', ['q' => 'Secret']))
             ->assertOk()->assertJsonCount(0, 'patients');
     }
+
+    public function test_search_endpoint_is_throttled(): void
+    {
+        // Throttle limit is 120 requests per minute. Exceed it and get a 429.
+        $this->actingAs($this->user);
+
+        for ($i = 0; $i < 121; $i++) {
+            $response = $this->getJson(route('tenant.search', ['q' => 'a']));
+            if ($i < 120) {
+                $response->assertOk();
+            } else {
+                // 121st request exceeds the throttle limit.
+                $response->assertStatus(429);
+            }
+        }
+    }
 }
