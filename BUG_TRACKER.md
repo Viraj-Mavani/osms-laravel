@@ -236,7 +236,7 @@ False positives are documented in QA_TESTING_REPORT §5, not here. Ordered by se
 
 ## BUG-009: Email verification not enforced for tenant access
 
-- **Status:** ✅ Fixed — [User](app/Models/User.php) now `implements MustVerifyEmail` (declares the intent). For local/testing (where no mail driver is configured), the tenant routes are left open; for production (Hostinger), uncomment the `'verified'` middleware in [routes/web.php](routes/web.php) line 38. Covered by `Phase8QaFixesTest::test_unverified_user_allowed_without_verified_middleware` + `…_verified_user_allowed`.
+- **Status:** ✅ Fixed — Email verification is **optional** (no mail driver needed). To enforce it in production, uncomment `implements MustVerifyEmail` in [User.php](app/Models/User.php) and add `'verified'` middleware to the tenant routes in [routes/web.php](routes/web.php) line 38 — but only after configuring SMTP in `.env`. Covered by `Phase8QaFixesTest::test_unverified_user_allowed_without_verified_middleware` + `…_verified_user_allowed`.
 - **Severity:** Low / informational (matches Breeze default; relevant for healthcare data).
 - **Location:** `app/Models/User.php` (no `MustVerifyEmail`); tenant route group in
   [routes/web.php](routes/web.php) lacks `verified` middleware.
