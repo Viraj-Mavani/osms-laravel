@@ -34,7 +34,9 @@
                 </div>
             @endif
 
-            @yield('content')
+            <div class="page-enter">
+                @yield('content')
+            </div>
         </div>
     </div>
 

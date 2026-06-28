@@ -2,6 +2,10 @@
 // OSMS Design System — Bootstrap 5 theme
 // Ported from the original Next.js globals.css (oklch tokens).
 // Primary = deep optical blue. Cool off-white page surface.
+//
+// iOS-inspired premium layer: unified spring motion, layered
+// shadow scale, metallic borders, predictable interactions.
+// See the [VISUAL DESIGN SYSTEM DIRECTIVE] block in CLAUDE.md.
 // ============================================================
 
 // 1. Bootstrap functions (needed before variable overrides)
@@ -14,8 +18,13 @@ $primary-rgb:    0, 79, 117;
 $body-bg:        #f4f6f9; // cool off-white page surface
 $body-color:     #1c2733; // near-black cool foreground
 
-$border-color:   #e2e6ec; // hairline border
+$border-color:   #e3e8ee; // metallic hairline border (refined, cooler)
 $secondary:      #eef1f5;
+
+$success:        #15803d;
+$danger:         #be123c;
+$warning:        #b45309;
+$info:           #0e7490;
 
 $font-family-sans-serif: "Plus Jakarta Sans", "Inter", system-ui, -apple-system,
   "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -28,11 +37,12 @@ $border-radius-xl: 1.1rem;
 $card-border-color:        $border-color;
 $card-border-radius:       0.85rem;
 $card-cap-bg:              transparent;
-$card-box-shadow:          0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+$card-box-shadow:          0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 14px rgba(16, 24, 40, 0.04);
 
 $input-border-color:       $border-color;
-$input-focus-border-color: tint-color($primary, 40%);
-$input-btn-focus-color:    rgba($primary, 0.25);
+$input-focus-border-color: tint-color($primary, 35%);
+$input-btn-focus-color:    rgba($primary, 0.18);
+$input-btn-focus-width:    0.2rem;
 
 $link-decoration:          none;
 
@@ -78,53 +88,237 @@ $enable-negative-margins:  true;
 @import "bootstrap-icons/font/bootstrap-icons.css";
 
 // ============================================================
-// 5. OSMS custom layer
+// 5. OSMS DESIGN TOKENS  (single source of truth)
 // ============================================================
 :root {
-  --osms-primary: #{$primary};
-  --osms-muted: #6b7785;
-  --osms-accent: #e7eef4;
-  --osms-sidebar-bg: #f0f3f7;
-  --osms-amber: #b45309;
-  --osms-amber-bg: #fef3c7;
+  // --- Brand & accents ---
+  --osms-primary:        #004f75;   // deep optical blue
+  --osms-primary-hover:  #00405f;   // darker on hover/active
+  --osms-primary-soft:   #e7eef4;   // tinted surface for primary contexts
+  --osms-primary-rgb:    0, 79, 117;
+  --osms-accent:         #e7eef4;   // legacy alias of primary-soft
+
+  // --- Surface stack (low → high elevation) ---
+  --surface-page:        #f4f6f9;   // app background
+  --surface-card:        #ffffff;   // pure white cards
+  --surface-sunken:      #eef1f5;   // wells, table heads, kanban columns
+  --surface-raised:      #ffffff;   // popovers/dropdowns
+  --osms-sidebar-bg:     #f0f3f7;
+
+  // --- Text ---
+  --osms-fg:             #1c2733;   // primary foreground
+  --osms-muted:          #6b7785;   // supporting text
+  --osms-faint:          #9aa5b1;   // tertiary / placeholders
+
+  // --- Borders (metallic, cool) ---
+  --osms-border:         #e3e8ee;   // hairline
+  --osms-border-strong:  #d3dae3;   // emphasized dividers
+
+  // --- Semantic tones (bg + fg pairs, AA contrast) ---
+  --tone-amber:          #b45309;   --tone-amber-bg:  #fef3c7;
+  --tone-green:          #15803d;   --tone-green-bg:  #dcfce7;
+  --tone-red:            #be123c;   --tone-red-bg:    #ffe4e6;
+  --tone-blue:           #004f75;   --tone-blue-bg:   #e7eef4;
+  --tone-neutral:        #475569;   --tone-neutral-bg:#eef1f5;
+  // legacy aliases
+  --osms-amber:          #b45309;
+  --osms-amber-bg:       #fef3c7;
+
+  // --- Layered shadow scale (cool, soft) ---
+  --shadow-sm:      0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-card:    0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 14px rgba(16, 24, 40, 0.04);
+  --shadow-raised:  0 6px 20px rgba(16, 24, 40, 0.08), 0 2px 6px rgba(16, 24, 40, 0.05);
+  --shadow-overlay: 0 16px 48px rgba(16, 24, 40, 0.16), 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-focus:   0 0 0 0.2rem rgba(0, 79, 117, 0.18);
+
+  // --- Motion contract ---
+  --ease-spring:    cubic-bezier(0.16, 1, 0.3, 1);   // overshoot-settle
+  --ease-out:       cubic-bezier(0.33, 1, 0.68, 1);
+  --duration-fast:  0.15s;
+  --duration-base:  0.3s;
+  --duration-slow:  0.45s;
+
+  // --- Typographic scale ---
+  --text-3xs:  0.62rem;
+  --text-2xs:  0.68rem;
+  --text-xs:   0.74rem;
+  --text-sm:   0.82rem;
+  --text-md:   0.9rem;
+  --text-base: 1rem;
+
+  // --- Radii ---
+  --radius-sm:  0.45rem;
+  --radius:     0.625rem;
+  --radius-lg:  0.9rem;
+  --radius-xl:  1.1rem;
+  --radius-pill: 999px;
+
+  // --- Spacing rhythm (4pt grid, elite breathing room) ---
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  // Bootstrap focus override hooks
+  --bs-border-color: var(--osms-border);
 }
 
+// ============================================================
+// 6. BASE
+// ============================================================
 body {
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.01em;
+  background: var(--surface-page);
+  color: var(--osms-fg);
 }
+
+// Typographic utility classes (replace scattered inline font-size)
+.text-3xs { font-size: var(--text-3xs) !important; }
+.text-2xs { font-size: var(--text-2xs) !important; }
+.text-xs  { font-size: var(--text-xs)  !important; }
+.text-sm  { font-size: var(--text-sm)  !important; }
+.text-md  { font-size: var(--text-md)  !important; }
 
 .text-muted-foreground { color: var(--osms-muted) !important; }
+.text-faint { color: var(--osms-faint) !important; }
 .font-display { letter-spacing: -0.02em; font-weight: 600; }
 
-// Buttery transitions on interactive elements (from original base layer)
-.btn, .form-control, .form-select, a,
-[role="button"], [role="tab"], [role="option"] {
-  transition: all 200ms ease-out;
+// Uppercase section labels
+.section-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--osms-muted);
 }
-.btn:active, [role="button"]:active { transform: scale(0.97); }
+
+// ============================================================
+// 7. UNIFIED MOTION  (predictable interaction mechanics)
+// ============================================================
+// One easing curve, one base duration across every interactive element.
+.btn, .form-control, .form-select, .form-check-input, a,
+.badge, .list-group-item-action, .dropdown-item,
+[role="button"], [role="tab"], [role="option"] {
+  transition: all var(--duration-base) var(--ease-spring);
+}
+
+// Active press — identical everywhere
+.btn:active,
+.list-group-item-action:active,
+[role="button"]:active { transform: scale(0.98); }
+
+// Reduced-motion users: respect the OS setting
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// ============================================================
+// 8. PREMIUM FOCUS RINGS  (gentle expansion on keyboard focus)
+// ============================================================
+:focus-visible {
+  outline: 2px solid var(--osms-primary);
+  outline-offset: 2px;
+  transition: outline-offset var(--duration-fast) var(--ease-out);
+}
+.btn:focus-visible { outline-offset: 3px; }
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+  border-color: var(--osms-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+// ============================================================
+// 9. BUTTONS  (refined depth + tactility)
+// ============================================================
+.btn {
+  font-weight: 500;
+  border-radius: var(--radius);
+}
+.btn-primary {
+  --bs-btn-bg: var(--osms-primary);
+  --bs-btn-border-color: var(--osms-primary);
+  --bs-btn-hover-bg: var(--osms-primary-hover);
+  --bs-btn-hover-border-color: var(--osms-primary-hover);
+  --bs-btn-active-bg: var(--osms-primary-hover);
+  --bs-btn-active-border-color: var(--osms-primary-hover);
+  box-shadow: 0 1px 2px rgba(0, 79, 117, 0.18), 0 2px 8px rgba(0, 79, 117, 0.16);
+}
+.btn-primary:hover { box-shadow: 0 2px 4px rgba(0, 79, 117, 0.22), 0 6px 16px rgba(0, 79, 117, 0.20); }
+
+// Secondary/light: clear, high-contrast neutral surfaces
+.btn-secondary {
+  --bs-btn-bg: var(--surface-card);
+  --bs-btn-border-color: var(--osms-border-strong);
+  --bs-btn-color: var(--osms-fg);
+  --bs-btn-hover-bg: var(--surface-sunken);
+  --bs-btn-hover-border-color: var(--osms-border-strong);
+  --bs-btn-hover-color: var(--osms-fg);
+  --bs-btn-active-bg: var(--surface-sunken);
+  --bs-btn-active-color: var(--osms-fg);
+}
+.btn-light {
+  --bs-btn-bg: var(--surface-card);
+  --bs-btn-border-color: var(--osms-border);
+  --bs-btn-color: var(--osms-fg);
+  --bs-btn-hover-bg: var(--surface-sunken);
+  --bs-btn-hover-border-color: var(--osms-border-strong);
+}
+
+// ============================================================
+// 10. CARDS, SHADOWS, SURFACES
+// ============================================================
+.card { background: var(--surface-card); }
 
 // Glassmorphism panels
 .glass {
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: var(--shadow-raised);
 }
 .glass-subtle {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.30);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow: var(--shadow-card);
 }
 
-// Hoverable card lift
-.card-lift { transition: transform 200ms ease-out, box-shadow 200ms ease-out; }
+// Hoverable card lift — unified spring
+.card-lift { transition: transform var(--duration-base) var(--ease-spring), box-shadow var(--duration-base) var(--ease-spring); }
 .card-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-raised);
+}
+
+// Dropdowns / popovers ride the overlay shadow
+.dropdown-menu, .popover {
+  border-color: var(--osms-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+}
+.dropdown-item { border-radius: var(--radius-sm); }
+.dropdown-item:active { background: var(--osms-primary); }
+.dropdown-menu { padding: 0.35rem; }
+
+// Modals
+.modal-content {
+  border: 1px solid var(--osms-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-overlay);
 }
 
 // Soft radial spotlight for auth/marketing pages
@@ -133,23 +327,40 @@ body {
     radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0, 79, 117, 0.10), transparent 60%),
     radial-gradient(ellipse 60% 50% at 100% 100%, rgba(20, 120, 140, 0.08), transparent 60%),
     radial-gradient(ellipse 60% 50% at 0% 100%, rgba(0, 79, 117, 0.06), transparent 60%),
-    #f4f6f9;
+    var(--surface-page);
 }
 
-// Fade-up entrance
+// ============================================================
+// 11. ENTRANCE ANIMATIONS
+// ============================================================
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-up { animation: fade-up 500ms ease-out both; }
+.animate-fade-up { animation: fade-up var(--duration-slow) var(--ease-spring) both; }
 
-// ---------- App shell layout ----------
+// Applied by default to page content (see layouts/app.blade.php)
+.page-enter { animation: fade-up var(--duration-slow) var(--ease-spring) both; }
+
+// ============================================================
+// 12. FORMS
+// ============================================================
+.form-control, .form-select {
+  border-radius: var(--radius);
+  border-color: var(--osms-border);
+}
+.form-control::placeholder { color: var(--osms-faint); }
+.form-label { font-weight: 500; font-size: var(--text-sm); color: var(--osms-fg); }
+
+// ============================================================
+// 13. APP SHELL LAYOUT
+// ============================================================
 .app-shell { display: flex; min-height: 100vh; }
 .app-sidebar {
-  width: 240px;
+  width: 248px;
   flex-shrink: 0;
   background: var(--osms-sidebar-bg);
-  border-right: 1px solid var(--border-color, #e2e6ec);
+  border-right: 1px solid var(--osms-border);
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -158,81 +369,103 @@ body {
 }
 .app-main { flex: 1; min-width: 0; }
 
+// Sidebar links — distinct hover vs. active (location anchor)
 .sidebar-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.55rem;
-  font-size: 0.875rem;
+  padding: 0.625rem 0.8rem;          // ≥44px touch target
+  border-radius: var(--radius-sm);
+  font-size: var(--text-md);
   font-weight: 500;
   color: #475569;
+  position: relative;
+  border-left: 3px solid transparent;
+  transition: all var(--duration-base) var(--ease-spring);
 }
-.sidebar-link:hover { background: var(--osms-accent); color: var(--osms-primary); }
-.sidebar-link.active { background: var(--osms-accent); color: var(--osms-primary); }
+.sidebar-link:hover {
+  background: rgba(0, 79, 117, 0.06);
+  color: var(--osms-primary);
+}
+.sidebar-link.active {
+  background: var(--osms-primary-soft);
+  color: var(--osms-primary);
+  font-weight: 600;
+  border-left-color: var(--osms-primary);
+}
 .sidebar-link i { font-size: 1.05rem; }
 
-// Metric card tones
+// ============================================================
+// 14. METRIC / STAT CARDS
+// ============================================================
 .metric-card .metric-icon {
-  width: 2.5rem; height: 2.5rem; border-radius: 0.6rem;
+  width: 2.5rem; height: 2.5rem; border-radius: var(--radius);
   display: inline-flex; align-items: center; justify-content: center;
 }
-.metric-card.tone-primary .metric-icon { background: var(--osms-accent); color: var(--osms-primary); }
-.metric-card.tone-amber .metric-icon { background: var(--osms-amber-bg); color: var(--osms-amber); }
-.metric-card.tone-default .metric-icon { background: #eef1f5; color: #64748b; }
+.metric-card.tone-primary .metric-icon { background: var(--tone-blue-bg); color: var(--tone-blue); }
+.metric-card.tone-amber .metric-icon { background: var(--tone-amber-bg); color: var(--tone-amber); }
+.metric-card.tone-default .metric-icon { background: var(--tone-neutral-bg); color: var(--tone-neutral); }
 
-// Kanban
+// Clickable KPI stat cards
+.osms-stat { transition: transform var(--duration-base) var(--ease-spring), box-shadow var(--duration-base) var(--ease-spring), border-color var(--duration-base) var(--ease-spring); }
+.osms-stat:hover { transform: translateY(-3px); box-shadow: var(--shadow-raised); }
+.osms-stat.osms-stat-active { box-shadow: 0 0 0 2px var(--osms-primary) inset, var(--shadow-card); }
+.osms-stat-icon {
+  width: 2.5rem; height: 2.5rem; border-radius: var(--radius); flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem;
+}
+// Stat-icon tone classes (replace inline background/color)
+.osms-stat-icon-amber   { background: var(--tone-amber-bg);   color: var(--tone-amber); }
+.osms-stat-icon-green   { background: var(--tone-green-bg);   color: var(--tone-green); }
+.osms-stat-icon-red     { background: var(--tone-red-bg);     color: var(--tone-red); }
+.osms-stat-icon-blue    { background: var(--tone-blue-bg);    color: var(--tone-blue); }
+.osms-stat-icon-neutral { background: var(--tone-neutral-bg); color: var(--tone-neutral); }
+.osms-stat-value { font-size: 1.4rem; font-weight: 700; line-height: 1.1; }
+.osms-stat-label { font-size: var(--text-xs); color: var(--osms-muted); }
+
+// ============================================================
+// 15. STATUS PILLS  (dot + label)
+// ============================================================
+.osms-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.2rem 0.6rem; border-radius: var(--radius-pill);
+  font-size: var(--text-xs); font-weight: 600; white-space: nowrap;
+}
+.osms-badge-dot { width: 0.45rem; height: 0.45rem; border-radius: 50%; flex-shrink: 0; }
+.osms-badge-amber { background: var(--tone-amber-bg); color: var(--tone-amber); }
+.osms-badge-blue  { background: var(--tone-blue-bg);  color: var(--tone-blue); }
+.osms-badge-green { background: var(--tone-green-bg); color: var(--tone-green); }
+.osms-badge-red   { background: var(--tone-red-bg);   color: var(--tone-red); }
+
+// ============================================================
+// 16. KANBAN
+// ============================================================
 .kanban-column {
-  background: #eef1f5;
-  border-radius: 0.85rem;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-lg);
   padding: 0.75rem;
   min-height: 60vh;
 }
-.kanban-card { cursor: grab; }
+.kanban-card { cursor: grab; transition: transform var(--duration-base) var(--ease-spring), box-shadow var(--duration-base) var(--ease-spring); }
+.kanban-card:hover { box-shadow: var(--shadow-raised); }
 .kanban-card.sortable-ghost { opacity: 0.4; }
 
-// ---------- Orders workspace ----------
-// Clickable KPI stat cards
-.osms-stat { transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out; }
-.osms-stat:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); }
-.osms-stat.osms-stat-active { box-shadow: 0 0 0 2px var(--osms-primary) inset, 0 4px 12px rgba(0, 79, 117, 0.10); }
-.osms-stat-icon {
-  width: 2.5rem; height: 2.5rem; border-radius: 0.65rem; flex-shrink: 0;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem;
-}
-.osms-stat-value { font-size: 1.4rem; font-weight: 700; line-height: 1.1; }
-.osms-stat-label { font-size: 0.74rem; color: var(--osms-muted); }
-
-// Status pills (dot + label)
-.osms-badge {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  padding: 0.2rem 0.6rem; border-radius: 999px;
-  font-size: 0.74rem; font-weight: 600; white-space: nowrap;
-}
-.osms-badge-dot { width: 0.45rem; height: 0.45rem; border-radius: 50%; flex-shrink: 0; }
-.osms-badge-amber { background: #fef3c7; color: #92400e; }
-.osms-badge-blue  { background: var(--osms-accent); color: var(--osms-primary); }
-.osms-badge-green { background: #d1fae5; color: #065f46; }
-
-// Orders table rows
-.osms-orders-table tbody tr { cursor: pointer; }
-.osms-orders-table tbody tr:hover { background: var(--osms-accent); }
+// ============================================================
+// 17. TABLES & LISTS
+// ============================================================
+.osms-orders-table tbody tr { cursor: pointer; transition: background var(--duration-fast) var(--ease-out); }
+.osms-orders-table tbody tr:hover { background: var(--osms-primary-soft); }
 .osms-orders-table th a:hover { color: var(--osms-primary) !important; }
 
-// Uppercase section labels
-.section-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--osms-muted);
-}
+.list-group-item-action:hover { background: var(--osms-primary-soft); }
 
 // Global search modal results
-.search-result-item { cursor: pointer; }
-.search-result-item:hover { background: var(--osms-accent); }
+.search-result-item { cursor: pointer; transition: background var(--duration-fast) var(--ease-out); }
+.search-result-item:hover { background: var(--osms-primary-soft); }
 
-// ---------- Print (thermal receipt + A4) ----------
+// ============================================================
+// 18. PRINT  (thermal receipt + A4)
+// ============================================================
 @media print {
   .app-sidebar, .no-print, .btn { display: none !important; }
   .app-main { width: 100% !important; }

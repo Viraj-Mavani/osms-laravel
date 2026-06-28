@@ -6,7 +6,7 @@
     $statusMeta = [
         'pending'          => ['label' => 'In lab',  'badge' => 'osms-badge-amber',   'dot' => '#b45309'],
         'ready_for_pickup' => ['label' => 'Ready',   'badge' => 'osms-badge-blue',    'dot' => '#004f75'],
-        'delivered'        => ['label' => 'Delivered','badge' => 'osms-badge-green',   'dot' => '#198754'],
+        'delivered'        => ['label' => 'Delivered','badge' => 'osms-badge-green',   'dot' => '#15803d'],
     ];
 
 @endphp
@@ -47,7 +47,7 @@
             <a href="{{ route('tenant.orders.index') }}"
                class="osms-stat card border-0 shadow-sm rounded-4 h-100 text-reset text-decoration-none {{ $view==='table' && empty($status) && empty($payment) ? 'osms-stat-active' : '' }}">
                 <div class="card-body d-flex align-items-center gap-3">
-                    <span class="osms-stat-icon bg-secondary-subtle text-secondary-emphasis"><i class="bi bi-receipt"></i></span>
+                    <span class="osms-stat-icon osms-stat-icon-neutral"><i class="bi bi-receipt"></i></span>
                     <div>
                         <div class="osms-stat-value font-display">{{ number_format($stats['total']) }}</div>
                         <div class="osms-stat-label">Total orders</div>
@@ -59,7 +59,7 @@
             <a href="{{ route('tenant.orders.index', ['status' => 'pending']) }}"
                class="osms-stat card border-0 shadow-sm rounded-4 h-100 text-reset text-decoration-none {{ ($status ?? '')==='pending' ? 'osms-stat-active' : '' }}">
                 <div class="card-body d-flex align-items-center gap-3">
-                    <span class="osms-stat-icon" style="background:#fef3c7;color:#b45309;"><i class="bi bi-clock-history"></i></span>
+                    <span class="osms-stat-icon osms-stat-icon-amber"><i class="bi bi-clock-history"></i></span>
                     <div>
                         <div class="osms-stat-value font-display">{{ number_format($stats['pending']) }}</div>
                         <div class="osms-stat-label">In lab</div>
@@ -71,7 +71,7 @@
             <a href="{{ route('tenant.orders.index', ['status' => 'ready_for_pickup']) }}"
                class="osms-stat card border-0 shadow-sm rounded-4 h-100 text-reset text-decoration-none {{ ($status ?? '')==='ready_for_pickup' ? 'osms-stat-active' : '' }}">
                 <div class="card-body d-flex align-items-center gap-3">
-                    <span class="osms-stat-icon bg-primary-subtle text-primary"><i class="bi bi-bag-check"></i></span>
+                    <span class="osms-stat-icon osms-stat-icon-blue"><i class="bi bi-bag-check"></i></span>
                     <div>
                         <div class="osms-stat-value font-display">{{ number_format($stats['ready']) }}</div>
                         <div class="osms-stat-label">Ready for pickup</div>
@@ -83,7 +83,7 @@
             <a href="{{ route('tenant.orders.index', ['payment' => 'outstanding']) }}"
                class="osms-stat card border-0 shadow-sm rounded-4 h-100 text-reset text-decoration-none {{ ($payment ?? '')==='outstanding' ? 'osms-stat-active' : '' }}">
                 <div class="card-body d-flex align-items-center gap-3">
-                    <span class="osms-stat-icon bg-danger-subtle text-danger"><i class="bi bi-cash-coin"></i></span>
+                    <span class="osms-stat-icon osms-stat-icon-red"><i class="bi bi-cash-coin"></i></span>
                     <div>
                         <div class="osms-stat-value font-display">₹{{ number_format($stats['outstanding'], 0) }}</div>
                         <div class="osms-stat-label">Outstanding</div>

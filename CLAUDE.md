@@ -52,3 +52,91 @@ use this trait** and have a `tenant_id` UUID column. Never query tenant data wit
 
 Add a `PhaseNXxxTest` per feature. Always include a tenant-isolation assertion for new
 tenant-owned data. Run `php artisan test` before considering a change done.
+
+## [VISUAL DESIGN SYSTEM DIRECTIVE]
+
+OSMS uses an **iOS-inspired premium design system**. The single source of truth is the
+`:root` token block in `resources/sass/app.scss`. Tailwind is **dead scaffolding** (not wired
+into Vite) — ignore it. All styling flows through Bootstrap 5 SCSS + the OSMS custom layer.
+
+**Non-negotiable rule:** never hardcode a hex color, font-size, shadow, radius, or transition
+timing in a Blade view. Always reference a token (`var(--…)`) or a utility class below. When a
+new pattern is needed, add a token/class to `app.scss` first, then use it.
+
+### Color palette (CSS custom properties)
+
+| Purpose | Token | Value |
+|---------|-------|-------|
+| Primary (brand) | `--osms-primary` | `#004f75` deep optical blue |
+| Primary hover/active | `--osms-primary-hover` | `#00405f` |
+| Primary soft surface | `--osms-primary-soft` | `#e7eef4` |
+| Page background | `--surface-page` | `#f4f6f9` cool off-white |
+| Card surface | `--surface-card` | `#ffffff` pure white |
+| Sunken (wells, table heads, kanban) | `--surface-sunken` | `#eef1f5` |
+| Sidebar | `--osms-sidebar-bg` | `#f0f3f7` |
+| Foreground text | `--osms-fg` | `#1c2733` |
+| Muted text | `--osms-muted` | `#6b7785` |
+| Faint / placeholder | `--osms-faint` | `#9aa5b1` |
+| Hairline border | `--osms-border` | `#e3e8ee` metallic cool |
+| Strong border | `--osms-border-strong` | `#d3dae3` |
+
+**Semantic tone pairs** (always use the bg+fg pair together — AA contrast):
+`--tone-amber`/`--tone-amber-bg`, `--tone-green`/`--tone-green-bg`,
+`--tone-red`/`--tone-red-bg`, `--tone-blue`/`--tone-blue-bg`,
+`--tone-neutral`/`--tone-neutral-bg`. Primary accent is the only "luxury" tone for primary
+components; tones are for status/semantics only.
+
+### Typography scale
+
+Use these utility classes instead of inline `font-size`:
+`.text-3xs` (.62rem) · `.text-2xs` (.68rem) · `.text-xs` (.74rem) · `.text-sm` (.82rem) ·
+`.text-md` (.9rem). Tokens: `--text-3xs … --text-base`. Color helpers: `.text-muted-foreground`,
+`.text-faint`. Section headers use `.section-label` (uppercase, tracked). Headings use
+`.font-display` (tight tracking, weight 600). Body font is Plus Jakarta Sans.
+
+### Shadow hierarchy (elevation = how high a surface floats)
+
+`--shadow-sm` (hairline) → `--shadow-card` (resting cards) → `--shadow-raised` (hover/lifted,
+dropdowns triggers) → `--shadow-overlay` (modals, dropdown menus, popovers) →
+`--shadow-focus` (focus ring). Never invent a new `box-shadow`; pick the matching tier.
+
+### Radii & spacing
+
+Radii: `--radius-sm` (.45rem) · `--radius` (.625rem) · `--radius-lg` (.9rem) ·
+`--radius-xl` (1.1rem) · `--radius-pill`. Spacing rhythm follows a 4pt grid
+(`--space-1 … --space-7`); prefer Bootstrap gap/padding utilities at those steps. Page content
+wraps in `p-4 p-md-5`; cards use `rounded-4 shadow-sm`; grid gaps `g-3`/`g-4` for breathing room.
+
+### Motion contract (predictable interaction mechanics)
+
+- **One easing curve:** `--ease-spring` = `cubic-bezier(0.16, 1, 0.3, 1)` for interaction/entrance;
+  `--ease-out` for micro feedback.
+- **Durations:** `--duration-fast` (.15s) hover tints · `--duration-base` (.3s) interactions ·
+  `--duration-slow` (.45s) entrances.
+- **Identical behavior everywhere:** all buttons, links, inputs, rows, badges, dropdown/list
+  items transition with `all var(--duration-base) var(--ease-spring)` (set globally — don't
+  re-declare per element).
+- **Active press:** clickable elements scale to `0.98` on `:active` (global rule).
+- **Focus:** keyboard focus shows a 2px primary outline that expands `outline-offset` 2→3px;
+  inputs get `--shadow-focus`. Never remove focus outlines.
+- **Entrance:** page content is wrapped in `.page-enter` (fade-up) by `layouts/app.blade.php`;
+  use `.animate-fade-up` for ad-hoc slide-in sections. `prefers-reduced-motion` is respected globally.
+
+### Component classes (reuse, don't reinvent)
+
+- **Cards:** `.card card-lift rounded-4 shadow-sm` — lifts `-3px` with `--shadow-raised` on hover.
+- **KPI stats:** `.osms-stat` (clickable card) + `.osms-stat-icon` with a tone modifier
+  (`.osms-stat-icon-amber|green|red|blue|neutral`). `.osms-stat-active` for the selected filter.
+- **Status pills:** `.osms-badge` + `.osms-badge-dot` + tone (`.osms-badge-amber|blue|green|red`).
+- **Metric cards:** `<x-metric-card tone="primary|amber|default">`.
+- **Sidebar:** `.sidebar-link` — hover = light primary tint; `.active` = soft surface + 3px left
+  accent + weight 600 (hover and active are deliberately distinct location anchors).
+- **Glass:** `.glass` / `.glass-subtle` for floating/auth panels. `.bg-spotlight` for auth/marketing.
+- **Tables/lists:** `.osms-orders-table` rows + `.list-group-item-action` + `.search-result-item`
+  all hover to `--osms-primary-soft`.
+
+### Buttons
+
+`.btn-primary` = brand fill with depth shadow + darker hover. `.btn-secondary`/`.btn-light` =
+white surface, metallic border, sunken hover (high contrast neutral). Keep brand fill for the
+single primary action per view; everything else is secondary/light.
