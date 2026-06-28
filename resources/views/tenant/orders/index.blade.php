@@ -26,11 +26,11 @@
             {{-- View toggle --}}
             <div class="btn-group" role="group" aria-label="View mode">
                 <a href="{{ route('tenant.orders.index') }}"
-                   class="btn btn-sm {{ $view === 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                   class="btn btn-sm {{ $view === 'table' ? 'btn-primary' : 'btn-secondary' }}">
                     <i class="bi bi-table me-1"></i> Table
                 </a>
                 <a href="{{ route('tenant.orders.index', ['view' => 'kanban']) }}"
-                   class="btn btn-sm {{ $view === 'kanban' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                   class="btn btn-sm {{ $view === 'kanban' ? 'btn-primary' : 'btn-secondary' }}">
                     <i class="bi bi-kanban me-1"></i> Board
                 </a>
             </div>

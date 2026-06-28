@@ -24,7 +24,7 @@
             <input type="search" name="q" value="{{ $search }}" class="form-control"
                    placeholder="Search by name or phone…" autocomplete="off">
             @if ($search)
-                <a href="{{ route('tenant.patients.index') }}" class="btn btn-outline-secondary">Clear</a>
+                <a href="{{ route('tenant.patients.index') }}" class="btn btn-secondary">Clear</a>
             @endif
         </div>
     </form>

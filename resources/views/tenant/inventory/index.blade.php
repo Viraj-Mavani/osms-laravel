@@ -36,9 +36,9 @@
             <option value="low" @selected($stock==='low')>Low stock</option>
             <option value="out" @selected($stock==='out')>Out of stock</option>
         </select>
-        <button type="submit" class="btn btn-outline-secondary">Search</button>
+        <button type="submit" class="btn btn-secondary">Search</button>
         @if ($q || $type || $stock)
-            <a href="{{ route('tenant.inventory.index') }}" class="btn btn-light"><i class="bi bi-x-lg"></i></a>
+            <a href="{{ route('tenant.inventory.index') }}" class="btn btn-secondary"><i class="bi bi-x-lg"></i></a>
         @endif
     </form>
 

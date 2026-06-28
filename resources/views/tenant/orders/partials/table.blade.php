@@ -31,9 +31,9 @@
         <option value="outstanding" @selected($payment==='outstanding')>Balance due</option>
         <option value="paid"        @selected($payment==='paid')>Fully paid</option>
     </select>
-    <button type="submit" class="btn btn-outline-secondary">Search</button>
+    <button type="submit" class="btn btn-secondary">Search</button>
     @if ($search || $status || $payment)
-        <a href="{{ route('tenant.orders.index') }}" class="btn btn-light" title="Clear filters"><i class="bi bi-x-lg"></i></a>
+        <a href="{{ route('tenant.orders.index') }}" class="btn btn-secondary" title="Clear filters"><i class="bi bi-x-lg"></i></a>
     @endif
 </form>
 
