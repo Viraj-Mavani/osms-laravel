@@ -17,16 +17,73 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class OrderController extends Controller
 {
-    /** Kanban board grouped by status. */
-    public function index(): View
+    /**
+     * Orders workspace. Defaults to a scalable, searchable/filterable/sortable
+     * table; `?view=kanban` falls back to the drag-and-drop workflow board.
+     */
+    public function index(Request $request): View
     {
+        $view = $request->query('view') === 'kanban' ? 'kanban' : 'table';
+
+        // At-a-glance KPIs across the whole tenant dataset (cheap aggregates,
+        // not row loads — these stay constant regardless of the active filters).
+        $stats = [
+            'total'       => Order::count(),
+            'pending'     => Order::where('status', 'pending')->count(),
+            'ready'       => Order::where('status', 'ready_for_pickup')->count(),
+            'outstanding' => (float) Order::where('balance_due', '>', 0)->sum('balance_due'),
+        ];
+
+        // ---- Kanban: grouped by status (workflow board) ----
+        if ($view === 'kanban') {
+            $orders = Order::with('patient:id,name,phone')
+                ->withCount('items')
+                ->latest()
+                ->get()
+                ->groupBy('status');
+
+            return view('tenant.orders.index', [
+                'view' => 'kanban',
+                'orders' => $orders,
+                'stats' => $stats,
+            ]);
+        }
+
+        // ---- Table: search + filter + sort + paginate ----
+        $search  = trim((string) $request->query('q', ''));
+        $status  = $request->query('status', '');
+        $payment = $request->query('payment', '');
+
+        $sortable = ['created_at', 'total_amount', 'balance_due'];
+        $sort = in_array($request->query('sort'), $sortable, true) ? $request->query('sort') : 'created_at';
+        $dir  = $request->query('dir') === 'asc' ? 'asc' : 'desc';
+
         $orders = Order::with('patient:id,name,phone')
             ->withCount('items')
-            ->latest()
-            ->get()
-            ->groupBy('status');
+            ->when($search !== '', function ($query) use ($search) {
+                $query->whereHas('patient', function ($p) use ($search) {
+                    $p->where('name', 'like', "%{$search}%")
+                      ->orWhere('phone', 'like', "%{$search}%");
+                });
+            })
+            ->when(in_array($status, ['pending', 'ready_for_pickup', 'delivered'], true),
+                fn ($query) => $query->where('status', $status))
+            ->when($payment === 'outstanding', fn ($query) => $query->where('balance_due', '>', 0))
+            ->when($payment === 'paid', fn ($query) => $query->where('balance_due', '<=', 0))
+            ->orderBy($sort, $dir)
+            ->paginate(25)
+            ->withQueryString();
 
-        return view('tenant.orders.index', compact('orders'));
+        return view('tenant.orders.index', [
+            'view'    => 'table',
+            'orders'  => $orders,
+            'stats'   => $stats,
+            'search'  => $search,
+            'status'  => $status,
+            'payment' => $payment,
+            'sort'    => $sort,
+            'dir'     => $dir,
+        ]);
     }
 
     public function create(Request $request): View

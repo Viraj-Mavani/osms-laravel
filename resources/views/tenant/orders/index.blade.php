@@ -2,89 +2,102 @@
 @section('title', 'Orders')
 
 @php
-    $columns = [
-        ['key' => 'pending', 'title' => 'Pending', 'desc' => 'In the lab', 'icon' => 'bi-clock-history'],
-        ['key' => 'ready_for_pickup', 'title' => 'Ready for Pickup', 'desc' => 'Waiting for customer', 'icon' => 'bi-bag-check'],
-        ['key' => 'delivered', 'title' => 'Delivered', 'desc' => 'Completed', 'icon' => 'bi-check-circle'],
+    // Status presentation: dot colour + badge classes + human label.
+    $statusMeta = [
+        'pending'          => ['label' => 'In lab',  'badge' => 'osms-badge-amber',   'dot' => '#b45309'],
+        'ready_for_pickup' => ['label' => 'Ready',   'badge' => 'osms-badge-blue',    'dot' => '#004f75'],
+        'delivered'        => ['label' => 'Delivered','badge' => 'osms-badge-green',   'dot' => '#198754'],
     ];
+
 @endphp
 
 @section('content')
 <div class="p-4 p-md-5">
+    {{-- Header --}}
     <div class="d-flex flex-column flex-md-row gap-3 align-items-md-end justify-content-between mb-4">
         <div>
             <p class="section-label mb-1">Workspace</p>
             <h1 class="h3 fw-semibold font-display mb-1">Orders</h1>
             <p class="text-muted-foreground mb-0" style="font-size:.9rem;">
-                Drag a card or use the button to advance an order through the workflow.
+                Find, filter, and advance orders through the lab workflow.
             </p>
         </div>
-        <a href="{{ route('tenant.orders.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> New order</a>
-    </div>
-
-    <div class="row g-3">
-        @foreach ($columns as $col)
-            @php $colOrders = $orders[$col['key']] ?? collect(); @endphp
-            <div class="col-md-4">
-                <div class="d-flex align-items-center justify-content-between px-1 mb-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary"
-                              style="width:1.75rem;height:1.75rem;"><i class="bi {{ $col['icon'] }}"></i></span>
-                        <div>
-                            <p class="mb-0 fw-semibold font-display" style="font-size:.9rem;">{{ $col['title'] }}</p>
-                            <p class="mb-0 text-muted-foreground" style="font-size:.7rem;">{{ $col['desc'] }}</p>
-                        </div>
-                    </div>
-                    <span class="badge text-bg-light">{{ $colOrders->count() }}</span>
-                </div>
-
-                <div class="kanban-column" data-status="{{ $col['key'] }}">
-                    @forelse ($colOrders as $order)
-                        <div class="kanban-card card border-0 shadow-sm rounded-3 mb-2" data-id="{{ $order->id }}">
-                            <div class="card-body p-3">
-                                <a href="{{ route('tenant.orders.show', $order) }}" class="text-decoration-none text-reset d-block">
-                                    <p class="mb-0 fw-medium text-truncate">{{ $order->patient?->name ?? 'Unknown patient' }}</p>
-                                    @if ($order->patient?->phone)
-                                        <p class="mb-2 text-muted-foreground" style="font-size:.72rem;">
-                                            <i class="bi bi-telephone me-1"></i>{{ $order->patient->phone }}
-                                        </p>
-                                    @endif
-                                    <div class="row g-1 text-center" style="font-size:.72rem;">
-                                        <div class="col-4">
-                                            <div class="text-muted-foreground text-uppercase" style="font-size:.6rem;">Total</div>
-                                            <div class="font-monospace">₹{{ number_format($order->total_amount, 0) }}</div>
-                                        </div>
-                                        <div class="col-4">
-                                            <div class="text-muted-foreground text-uppercase" style="font-size:.6rem;">Balance</div>
-                                            <div class="font-monospace {{ $order->balance_due > 0 ? 'text-danger' : '' }}">₹{{ number_format($order->balance_due, 0) }}</div>
-                                        </div>
-                                        <div class="col-4">
-                                            <div class="text-muted-foreground text-uppercase" style="font-size:.6rem;">Items</div>
-                                            <div class="font-monospace">{{ $order->items_count }}</div>
-                                        </div>
-                                    </div>
-                                    <p class="mb-0 mt-2 text-muted-foreground" style="font-size:.68rem;">
-                                        Placed {{ $order->created_at->format('d M Y') }}
-                                    </p>
-                                </a>
-                                @if ($col['key'] !== 'delivered')
-                                    @php $next = $col['key'] === 'pending' ? 'ready_for_pickup' : 'delivered'; @endphp
-                                    <button type="button" class="btn btn-primary btn-sm w-100 mt-2 advance-btn"
-                                            data-id="{{ $order->id }}" data-next="{{ $next }}">
-                                        {{ $col['key'] === 'pending' ? 'Mark ready' : 'Mark delivered' }}
-                                        <i class="bi bi-arrow-right ms-1"></i>
-                                    </button>
-                                @endif
-                            </div>
-                        </div>
-                    @empty
-                        <p class="text-center text-muted-foreground border border-2 border-dashed rounded-3 py-4 mb-0"
-                           style="font-size:.8rem;">Nothing here yet</p>
-                    @endforelse
-                </div>
+        <div class="d-flex align-items-center gap-2">
+            {{-- View toggle --}}
+            <div class="btn-group" role="group" aria-label="View mode">
+                <a href="{{ route('tenant.orders.index') }}"
+                   class="btn btn-sm {{ $view === 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                    <i class="bi bi-table me-1"></i> Table
+                </a>
+                <a href="{{ route('tenant.orders.index', ['view' => 'kanban']) }}"
+                   class="btn btn-sm {{ $view === 'kanban' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                    <i class="bi bi-kanban me-1"></i> Board
+                </a>
             </div>
-        @endforeach
+            <a href="{{ route('tenant.orders.create') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i> New order
+            </a>
+        </div>
     </div>
+
+    {{-- KPI stat cards (clickable → filter the table) --}}
+    @php $statBase = ['view' => null]; @endphp
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <a href="{{ route('tenant.orders.index') }}"
+               class="osms-stat card border-0 shadow-sm rounded-4 h-100 text-reset text-decoration-none {{ $view==='table' && empty($status) && empty($payment) ? 'osms-stat-active' : '' }}">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <span class="osms-stat-icon bg-secondary-subtle text-secondary-emphasis"><i class="bi bi-receipt"></i></span>
+                    <div>
+                        <div class="osms-stat-value font-display">{{ number_format($stats['total']) }}</div>
+                        <div class="osms-stat-label">Total orders</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a href="{{ route('tenant.orders.index', ['status' => 'pending']) }}"
+               class="osms-stat card border-0 shadow-sm rounded-4 h-100 text-reset text-decoration-none {{ ($status ?? '')==='pending' ? 'osms-stat-active' : '' }}">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <span class="osms-stat-icon" style="background:#fef3c7;color:#b45309;"><i class="bi bi-clock-history"></i></span>
+                    <div>
+                        <div class="osms-stat-value font-display">{{ number_format($stats['pending']) }}</div>
+                        <div class="osms-stat-label">In lab</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a href="{{ route('tenant.orders.index', ['status' => 'ready_for_pickup']) }}"
+               class="osms-stat card border-0 shadow-sm rounded-4 h-100 text-reset text-decoration-none {{ ($status ?? '')==='ready_for_pickup' ? 'osms-stat-active' : '' }}">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <span class="osms-stat-icon bg-primary-subtle text-primary"><i class="bi bi-bag-check"></i></span>
+                    <div>
+                        <div class="osms-stat-value font-display">{{ number_format($stats['ready']) }}</div>
+                        <div class="osms-stat-label">Ready for pickup</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a href="{{ route('tenant.orders.index', ['payment' => 'outstanding']) }}"
+               class="osms-stat card border-0 shadow-sm rounded-4 h-100 text-reset text-decoration-none {{ ($payment ?? '')==='outstanding' ? 'osms-stat-active' : '' }}">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <span class="osms-stat-icon bg-danger-subtle text-danger"><i class="bi bi-cash-coin"></i></span>
+                    <div>
+                        <div class="osms-stat-value font-display">₹{{ number_format($stats['outstanding'], 0) }}</div>
+                        <div class="osms-stat-label">Outstanding</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    @if ($view === 'kanban')
+        @include('tenant.orders.partials.kanban', ['statusMeta' => $statusMeta])
+    @else
+        @include('tenant.orders.partials.table', ['statusMeta' => $statusMeta])
+    @endif
 </div>
 
 @push('scripts')
@@ -100,7 +113,30 @@
         });
     }
 
-    // Drag-and-drop between columns
+    // Inline quick-advance (table + kanban share this).
+    document.querySelectorAll('.advance-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            btn.disabled = true;
+            btn.querySelector('.spinner-border')?.classList.remove('d-none');
+            updateStatus(btn.dataset.id, btn.dataset.next).then(() => window.location.reload());
+        });
+    });
+
+    // Keyboard: "/" focuses search (when present, table view).
+    const searchInput = document.getElementById('orderSearch');
+    if (searchInput) {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '/' && document.activeElement !== searchInput
+                && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+    }
+
+    // Kanban drag-and-drop (only present in board view).
     document.querySelectorAll('.kanban-column').forEach((col) => {
         new Sortable(col, {
             group: 'orders', animation: 150, ghostClass: 'sortable-ghost',
@@ -111,15 +147,6 @@
                     updateStatus(id, newStatus).then(() => window.location.reload());
                 }
             },
-        });
-    });
-
-    // Advance button
-    document.querySelectorAll('.advance-btn').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            btn.disabled = true;
-            updateStatus(btn.dataset.id, btn.dataset.next).then(() => window.location.reload());
         });
     });
 </script>
