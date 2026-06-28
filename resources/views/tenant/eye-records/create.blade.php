@@ -1,88 +1,174 @@
 @extends('layouts.app')
 @section('title', 'New eye record')
 
-@php
-    $fields = [
-        ['key' => 'sph', 'label' => 'SPH', 'type' => 'number', 'step' => '0.25', 'hint' => 'e.g. -1.50'],
-        ['key' => 'cyl', 'label' => 'CYL', 'type' => 'number', 'step' => '0.25', 'hint' => 'e.g. -0.75'],
-        ['key' => 'axis', 'label' => 'Axis', 'type' => 'number', 'step' => '1', 'hint' => '0–180°'],
-        ['key' => 'add', 'label' => 'ADD', 'type' => 'number', 'step' => '0.25', 'hint' => 'e.g. +2.00'],
-        ['key' => 'va', 'label' => 'VA', 'type' => 'text', 'step' => null, 'hint' => 'e.g. 6/6'],
-        ['key' => 'spl', 'label' => 'Spl', 'type' => 'number', 'step' => '0.25', 'hint' => ''],
-        ['key' => 'dv', 'label' => 'D.V.', 'type' => 'number', 'step' => '0.25', 'hint' => ''],
-        ['key' => 'nv', 'label' => 'N.V.', 'type' => 'number', 'step' => '0.25', 'hint' => ''],
-    ];
-@endphp
-
 @section('content')
-<div class="p-4 p-md-5" style="max-width:56rem;">
+<div class="p-4 p-md-5" style="max-width:72rem;">
+    {{-- Breadcrumb --}}
     <a href="{{ route('tenant.patients.show', $patient) }}"
        class="d-inline-flex align-items-center gap-1 text-muted-foreground text-decoration-none mb-3" style="font-size:.8rem;">
-        <i class="bi bi-chevron-left"></i> Back to {{ $patient->name }}
+        <i class="bi bi-chevron-left"></i> Back to patient
     </a>
 
-    <p class="section-label mb-1">New eye record</p>
-    <h1 class="h3 fw-semibold font-display mb-1">Prescription</h1>
-    <p class="text-muted-foreground mb-4" style="font-size:.9rem;">For {{ $patient->name }} · {{ $patient->phone }}</p>
+    {{-- Header --}}
+    <div class="mb-4">
+        <p class="section-label mb-1">Patient record</p>
+        <h1 class="h3 fw-semibold font-display mb-2">Eye prescription</h1>
+        <p class="text-muted-foreground mb-0" style="font-size:.9rem;">
+            Complete refractive examination for <span class="fw-medium">{{ $patient->name }}</span>
+        </p>
+    </div>
 
     @if ($errors->any())
-        <div class="alert alert-danger py-2 px-3 small rounded-3">
-            <ul class="mb-0 ps-3">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
+        <div class="alert alert-danger alert-dismissible fade show py-3 px-4 rounded-3 mb-4" role="alert">
+            <div class="fw-medium mb-2"><i class="bi bi-exclamation-circle me-2"></i>Please fix the following:</div>
+            <ul class="mb-0 ps-3">@foreach ($errors->all() as $e)<li class="small">{{ $e }}</li>@endforeach</ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
 
-    <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-body p-4">
-            <form method="POST" action="{{ route('tenant.eye-records.store', $patient) }}" class="d-flex flex-column gap-4">
-                @csrf
+    <form method="POST" action="{{ route('tenant.eye-records.store', $patient) }}" class="d-flex flex-column gap-4">
+        @csrf
 
-                <div class="row g-4">
-                    @foreach (['od' => 'OD (Right)', 'os' => 'OS (Left)'] as $eye => $eyeLabel)
-                        <div class="col-md-6">
-                            <h3 class="h6 fw-semibold font-display mb-3">{{ $eyeLabel }}</h3>
-                            <div class="d-flex flex-column gap-2">
-                                @foreach ($fields as $f)
-                                    <div class="row align-items-center g-2">
-                                        <label class="col-3 col-form-label small fw-medium text-muted-foreground"
-                                               for="{{ $eye }}_{{ $f['key'] }}">{{ $f['label'] }}</label>
-                                        <div class="col-9">
-                                            <input id="{{ $eye }}_{{ $f['key'] }}" name="{{ $eye }}_{{ $f['key'] }}"
-                                                   type="{{ $f['type'] }}"
-                                                   @if($f['step']) step="{{ $f['step'] }}" @endif
-                                                   @if($f['key'] === 'axis') min="0" max="180" @endif
-                                                   value="{{ old($eye.'_'.$f['key']) }}"
-                                                   class="form-control form-control-sm @error($eye.'_'.$f['key']) is-invalid @enderror"
-                                                   placeholder="{{ $f['hint'] }}">
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-
-                <hr class="my-1">
-
+        {{-- Patient & examination header --}}
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <p class="text-uppercase text-muted-foreground mb-3" style="font-size:.72rem;letter-spacing:.05em;">Examination details</p>
                 <div class="row g-3">
                     <div class="col-sm-4">
-                        <label for="pd" class="form-label small fw-medium mb-1">PD (mm)</label>
-                        <input id="pd" name="pd" type="number" min="0" max="100" step="0.5"
-                               value="{{ old('pd') }}" class="form-control @error('pd') is-invalid @enderror" placeholder="62">
+                        <label for="name" class="form-label small fw-medium mb-2">Patient name</label>
+                        <input id="name" type="text" class="form-control" value="{{ $patient->name }}" disabled>
+                        <div class="text-muted-foreground" style="font-size:.75rem;margin-top:.25rem;">{{ $patient->phone }}</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <label for="contact" class="form-label small fw-medium mb-2">Contact number</label>
+                        <input id="contact" type="text" class="form-control" value="{{ $patient->phone }}" disabled>
+                    </div>
+                    <div class="col-sm-4">
+                        <label for="checked_by" class="form-label small fw-medium mb-2">Examined by</label>
+                        <input id="checked_by" name="checked_by" type="text" class="form-control"
+                               value="{{ old('checked_by', auth()->user()->name) }}" placeholder="Optometrist name">
                     </div>
                 </div>
-
-                <div>
-                    <label for="notes" class="form-label small fw-medium mb-1">Notes</label>
-                    <textarea id="notes" name="notes" rows="3" class="form-control"
-                              placeholder="Any optometrist remarks…">{{ old('notes') }}</textarea>
-                </div>
-
-                <div class="d-flex justify-content-end gap-2">
-                    <a href="{{ route('tenant.patients.show', $patient) }}" class="btn btn-light">Cancel</a>
-                    <button type="submit" class="btn btn-primary">Save eye record</button>
-                </div>
-            </form>
+            </div>
         </div>
-    </div>
+
+        {{-- Prescription table --}}
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0" style="font-size:.9rem;">
+                        <thead class="text-muted-foreground text-uppercase bg-light" style="font-size:.7rem;letter-spacing:.03em;">
+                            <tr>
+                                <th class="ps-4" style="width:8rem;">Measurement</th>
+                                <th colspan="4" class="text-center py-3">RIGHT EYE (OD)</th>
+                                <th colspan="4" class="text-center py-3 border-start">LEFT EYE (OS)</th>
+                                <th class="pe-4"></th>
+                            </tr>
+                            <tr style="border-top:1px solid #e2e6ec;">
+                                <th class="ps-4 py-2"></th>
+                                <th class="text-center" style="width:5.5rem;">SPH</th>
+                                <th class="text-center" style="width:5.5rem;">CYL</th>
+                                <th class="text-center" style="width:5.5rem;">AXIS</th>
+                                <th class="text-center pe-3" style="width:5.5rem;">V/S</th>
+                                <th class="text-center ps-3" style="width:5.5rem;">SPH</th>
+                                <th class="text-center" style="width:5.5rem;">CYL</th>
+                                <th class="text-center" style="width:5.5rem;">AXIS</th>
+                                <th class="text-center pe-4" style="width:5.5rem;">V/S</th>
+                                <th class="pe-4"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{-- Distance Vision (D.V.) --}}
+                            <tr class="eye-record-row">
+                                <td class="ps-4 fw-medium text-muted-foreground" style="font-size:.85rem;">D.V.</td>
+                                <td class="text-center"><input type="number" name="od_sph" step="0.25" value="{{ old('od_sph') }}" class="form-control form-control-sm text-center @error('od_sph') is-invalid @enderror" placeholder="—"></td>
+                                <td class="text-center"><input type="number" name="od_cyl" step="0.25" value="{{ old('od_cyl') }}" class="form-control form-control-sm text-center @error('od_cyl') is-invalid @enderror" placeholder="—"></td>
+                                <td class="text-center"><input type="number" name="od_axis" min="0" max="180" step="1" value="{{ old('od_axis') }}" class="form-control form-control-sm text-center @error('od_axis') is-invalid @enderror" placeholder="—"></td>
+                                <td class="text-center pe-3"><input type="text" name="od_va" value="{{ old('od_va') }}" class="form-control form-control-sm text-center @error('od_va') is-invalid @enderror" placeholder="6/6"></td>
+                                <td class="text-center ps-3 border-start"><input type="number" name="os_sph" step="0.25" value="{{ old('os_sph') }}" class="form-control form-control-sm text-center @error('os_sph') is-invalid @enderror" placeholder="—"></td>
+                                <td class="text-center"><input type="number" name="os_cyl" step="0.25" value="{{ old('os_cyl') }}" class="form-control form-control-sm text-center @error('os_cyl') is-invalid @enderror" placeholder="—"></td>
+                                <td class="text-center"><input type="number" name="os_axis" min="0" max="180" step="1" value="{{ old('os_axis') }}" class="form-control form-control-sm text-center @error('os_axis') is-invalid @enderror" placeholder="—"></td>
+                                <td class="text-center pe-4"><input type="text" name="os_va" value="{{ old('os_va') }}" class="form-control form-control-sm text-center @error('os_va') is-invalid @enderror" placeholder="6/6"></td>
+                                <td class="pe-4 text-muted-foreground" style="font-size:.7rem;opacity:.6;">Distance</td>
+                            </tr>
+
+                            {{-- Near Vision (N.V.) --}}
+                            <tr class="eye-record-row">
+                                <td class="ps-4 fw-medium text-muted-foreground" style="font-size:.85rem;">N.V.</td>
+                                <td class="text-center"><input type="number" name="od_nv" step="0.25" value="{{ old('od_nv') }}" class="form-control form-control-sm text-center @error('od_nv') is-invalid @enderror" placeholder="—"></td>
+                                <td class="text-center" colspan="3"></td>
+                                <td class="text-center ps-3 border-start"><input type="number" name="os_nv" step="0.25" value="{{ old('os_nv') }}" class="form-control form-control-sm text-center @error('os_nv') is-invalid @enderror" placeholder="—"></td>
+                                <td class="text-center" colspan="3"></td>
+                                <td class="pe-4 text-muted-foreground" style="font-size:.7rem;opacity:.6;">Near</td>
+                            </tr>
+
+                            {{-- Addition (ADD) --}}
+                            <tr class="eye-record-row">
+                                <td class="ps-4 fw-medium text-muted-foreground" style="font-size:.85rem;">ADD</td>
+                                <td class="text-center"><input type="number" name="od_add" step="0.25" value="{{ old('od_add') }}" class="form-control form-control-sm text-center @error('od_add') is-invalid @enderror" placeholder="—"></td>
+                                <td class="text-center" colspan="3"></td>
+                                <td class="text-center ps-3 border-start"><input type="number" name="os_add" step="0.25" value="{{ old('os_add') }}" class="form-control form-control-sm text-center @error('os_add') is-invalid @enderror" placeholder="—"></td>
+                                <td class="text-center" colspan="3"></td>
+                                <td class="pe-4 text-muted-foreground" style="font-size:.7rem;opacity:.6;">Addition</td>
+                            </tr>
+
+                            {{-- Special (SPL) --}}
+                            <tr class="eye-record-row">
+                                <td class="ps-4 fw-medium text-muted-foreground" style="font-size:.85rem;">SPL</td>
+                                <td class="text-center"><input type="number" name="od_spl" step="0.25" value="{{ old('od_spl') }}" class="form-control form-control-sm text-center @error('od_spl') is-invalid @enderror" placeholder="—"></td>
+                                <td class="text-center" colspan="3"></td>
+                                <td class="text-center ps-3 border-start"><input type="number" name="os_spl" step="0.25" value="{{ old('os_spl') }}" class="form-control form-control-sm text-center @error('os_spl') is-invalid @enderror" placeholder="—"></td>
+                                <td class="text-center" colspan="3"></td>
+                                <td class="pe-4 text-muted-foreground" style="font-size:.7rem;opacity:.6;">Special</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {{-- PD & Notes --}}
+        <div class="row g-3">
+            <div class="col-sm-3">
+                <label for="pd" class="form-label small fw-medium mb-2">PD (mm)</label>
+                <input id="pd" name="pd" type="number" min="0" max="100" step="0.5"
+                       value="{{ old('pd') }}" class="form-control @error('pd') is-invalid @enderror" placeholder="62">
+                <div class="text-muted-foreground" style="font-size:.7rem;margin-top:.3rem;">Pupillary distance</div>
+            </div>
+            <div class="col-sm-9">
+                <label for="notes" class="form-label small fw-medium mb-2">Clinical notes</label>
+                <textarea id="notes" name="notes" rows="2" class="form-control" placeholder="Remarks, special observations, follow-up notes…">{{ old('notes') }}</textarea>
+            </div>
+        </div>
+
+        {{-- Actions --}}
+        <div class="d-flex justify-content-end gap-2">
+            <a href="{{ route('tenant.patients.show', $patient) }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-2"></i>Save prescription</button>
+        </div>
+    </form>
 </div>
+
+@push('styles')
+<style>
+    .eye-record-row {
+        transition: background-color 200ms ease-out;
+    }
+    .eye-record-row:hover {
+        background-color: var(--osms-primary-soft);
+    }
+    .eye-record-row input.form-control {
+        border-color: #e2e6ec;
+        transition: all 150ms ease-out;
+    }
+    .eye-record-row input.form-control:focus {
+        border-color: var(--osms-primary);
+        box-shadow: 0 0 0 3px rgba(0, 79, 117, 0.1);
+    }
+    .table thead th {
+        border-bottom: 2px solid #e2e6ec;
+        padding: 0.75rem 0.5rem;
+    }
+</style>
+@endpush
 @endsection
