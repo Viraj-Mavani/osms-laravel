@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,12 +46,24 @@ class OnboardingController extends Controller
         // Logo upload → public disk (replaces Supabase Storage `logos` bucket)
         $logoUrl = null;
         if ($request->hasFile('logo')) {
-            $path = $request->file('logo')->store('logos', 'public');
-            $logoUrl = Storage::url($path);
+            try {
+                $path = $request->file('logo')->store('logos', 'public');
+                $logoUrl = Storage::url($path);
+            } catch (\Throwable $e) {
+                return back()->withInput()
+                    ->with('error', 'We could not upload your logo. Please try again.');
+            }
         }
 
-        // Atomic: create tenant, link user, start trial (replaces the SECURITY DEFINER RPC)
+        // Atomic: create tenant, link user, start trial (replaces the SECURITY DEFINER RPC).
+        // Lock + re-check the user row inside the transaction so two concurrent
+        // submissions can't both create a tenant for the same user (BUG-008).
         DB::transaction(function () use ($user, $validated, $logoUrl) {
+            $locked = User::whereKey($user->id)->lockForUpdate()->first();
+            if (! $locked || $locked->hasTenant()) {
+                return; // another request already onboarded this user
+            }
+
             $tenant = Tenant::create([
                 'store_name' => $validated['store_name'],
                 'tax_id' => $validated['tax_id'] ?? null,
@@ -58,7 +71,7 @@ class OnboardingController extends Controller
                 'logo_url' => $logoUrl,
             ]);
 
-            $user->forceFill(['tenant_id' => $tenant->id])->save();
+            $locked->forceFill(['tenant_id' => $tenant->id])->save();
 
             Subscription::create([
                 'tenant_id' => $tenant->id,

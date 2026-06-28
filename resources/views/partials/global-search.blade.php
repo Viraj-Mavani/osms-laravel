@@ -19,10 +19,15 @@
 
 @push('scripts')
 <script>
+// Run after the deferred Vite module has defined window.bootstrap. An inline
+// classic script executes during parse — before the deferred ESM bundle — so
+// touching `bootstrap` synchronously here would throw and abort the whole IIFE
+// (leaving Ctrl/Cmd+K unbound). Wait for DOMContentLoaded instead.
 (function () {
+    function init() {
     const modalEl = document.getElementById('globalSearchModal');
-    if (!modalEl) return;
-    const modal = new bootstrap.Modal(modalEl);
+    if (!modalEl || !window.bootstrap) return;
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     const input = document.getElementById('globalSearchInput');
     const out = document.getElementById('globalSearchResults');
     const SEARCH_URL = @json(route('tenant.search'));
@@ -84,6 +89,13 @@
                 .then(r => r.json()).then(d => render(d, false, q)).catch(() => {});
         }, 200);
     });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 })();
 </script>
 @endpush

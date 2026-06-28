@@ -12,6 +12,9 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class AnalyticsController extends Controller
 {
+    /** Hard ceiling for "show all" lists and exports so wide ranges stay bounded. */
+    private const MAX_ROWS = 5000;
+
     /** Resolve the [from, to] range from the request (default: last 30 days). */
     private function range(Request $request): array
     {
@@ -67,20 +70,20 @@ class AnalyticsController extends Controller
             ->map(fn ($v, $brand) => ['brand' => $brand] + $v)
             ->sortByDesc('revenue')->take(10)->values();
 
-        // Ledger — all orders in range (default limit to 50; allow "show all" via query param).
+        // Ledger — orders in range (default 50; "show all" raises the cap but never removes it).
         $showAllLedger = $request->boolean('ledger_all');
         $ledger = Order::with('patient:id,name')
             ->whereBetween('created_at', [$from, $to])
             ->latest()
-            ->when(! $showAllLedger, fn ($q) => $q->limit(50))
+            ->limit($showAllLedger ? self::MAX_ROWS : 50)
             ->get();
 
-        // Pending dues — all outstanding balances (default limit to 50; allow "show all" via query param).
+        // Pending dues — outstanding balances (default 50; "show all" raises the cap but never removes it).
         $showAllDues = $request->boolean('dues_all');
         $dues = Order::with('patient:id,name,phone')
             ->where('balance_due', '>', 0)
             ->orderByDesc('balance_due')
-            ->when(! $showAllDues, fn ($q) => $q->limit(50))
+            ->limit($showAllDues ? self::MAX_ROWS : 50)
             ->get();
 
         $stats = compact('revenue', 'cogs', 'profit', 'margin', 'ordersCount');

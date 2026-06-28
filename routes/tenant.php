@@ -53,7 +53,9 @@ Route::middleware('role:store_admin,superadmin')->group(function () {
     Route::get('analytics/ledger/export', [AnalyticsController::class, 'exportLedger'])->name('analytics.ledger.export');
 });
 
-// ---- Billing / subscriptions ----
-Route::get('billing', [BillingController::class, 'index'])->name('billing.index');
-Route::post('billing/subscribe', [BillingController::class, 'subscribe'])->name('billing.subscribe');
-Route::get('billing/success', [BillingController::class, 'success'])->name('billing.success');
+// ---- Billing / subscriptions (store admins + superadmin only) ----
+Route::middleware('role:store_admin,superadmin')->group(function () {
+    Route::get('billing', [BillingController::class, 'index'])->name('billing.index');
+    Route::post('billing/subscribe', [BillingController::class, 'subscribe'])->name('billing.subscribe');
+    Route::get('billing/success', [BillingController::class, 'success'])->name('billing.success');
+});

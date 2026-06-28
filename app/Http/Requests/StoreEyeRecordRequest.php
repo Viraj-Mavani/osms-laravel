@@ -19,14 +19,16 @@ class StoreEyeRecordRequest extends FormRequest
         ];
 
         foreach (['od', 'os'] as $eye) {
-            $rules["{$eye}_sph"] = ['nullable', 'numeric'];
-            $rules["{$eye}_cyl"] = ['nullable', 'numeric'];
+            // Clinically realistic bounds that also stay within the decimal(5,2)/(6,2)
+            // columns, so an out-of-range value is a 422, never a DB-overflow 500.
+            $rules["{$eye}_sph"] = ['nullable', 'numeric', 'between:-30,30'];
+            $rules["{$eye}_cyl"] = ['nullable', 'numeric', 'between:-15,15'];
             $rules["{$eye}_axis"] = ['nullable', 'integer', 'min:0', 'max:180'];
-            $rules["{$eye}_add"] = ['nullable', 'numeric'];
+            $rules["{$eye}_add"] = ['nullable', 'numeric', 'between:0,6'];
             $rules["{$eye}_va"] = ['nullable', 'string', 'max:20'];
-            $rules["{$eye}_spl"] = ['nullable', 'numeric'];
-            $rules["{$eye}_dv"] = ['nullable', 'numeric'];
-            $rules["{$eye}_nv"] = ['nullable', 'numeric'];
+            $rules["{$eye}_spl"] = ['nullable', 'numeric', 'between:-50,50'];
+            $rules["{$eye}_dv"] = ['nullable', 'numeric', 'between:-50,50'];
+            $rules["{$eye}_nv"] = ['nullable', 'numeric', 'between:-50,50'];
         }
 
         return $rules;

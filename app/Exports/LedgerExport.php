@@ -10,6 +10,9 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class LedgerExport implements FromCollection, WithHeadings, WithMapping
 {
+    /** Hard ceiling so a wide date range can't pull an unbounded set into memory. */
+    private const MAX_ROWS = 5000;
+
     public function __construct(
         private Carbon $from,
         private Carbon $to,
@@ -21,6 +24,7 @@ class LedgerExport implements FromCollection, WithHeadings, WithMapping
         return Order::with('patient:id,name')
             ->whereBetween('created_at', [$this->from, $this->to])
             ->latest()
+            ->limit(self::MAX_ROWS)
             ->get();
     }
 

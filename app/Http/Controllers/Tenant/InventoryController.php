@@ -46,8 +46,17 @@ class InventoryController extends Controller
     public function store(InventoryRequest $request, SkuService $sku): RedirectResponse
     {
         $data = $request->validated();
-        $data['sku'] = $sku->generateSku($data['item_type'], $data['brand'] ?? null);
-        $data['barcode'] = $sku->generateBarcode();
+
+        // Regenerate until unique within this tenant (the global scope keeps the
+        // existence checks tenant-scoped), so a rare collision can't 500 on the
+        // unique index or silently produce a duplicate barcode.
+        do {
+            $data['sku'] = $sku->generateSku($data['item_type'], $data['brand'] ?? null);
+        } while (Inventory::where('sku', $data['sku'])->exists());
+
+        do {
+            $data['barcode'] = $sku->generateBarcode();
+        } while (Inventory::where('barcode', $data['barcode'])->exists());
 
         Inventory::create($data);
 

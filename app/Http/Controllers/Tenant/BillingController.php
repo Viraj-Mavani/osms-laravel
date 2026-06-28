@@ -33,6 +33,13 @@ class BillingController extends Controller
             return back()->with('error', 'Online payments are not configured yet. Please contact support.');
         }
 
+        // Don't create a second Razorpay subscription on top of an active one —
+        // it would keep billing while the app only tracks the newest id.
+        $existing = Subscription::first();
+        if ($existing && $existing->isActive()) {
+            return back()->with('error', 'You already have an active subscription. Manage it from billing.');
+        }
+
         $tenant = $request->user()->tenant;
 
         try {

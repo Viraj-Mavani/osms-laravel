@@ -49,7 +49,7 @@ class OrderController extends Controller
             'advance_paid' => ['nullable', 'numeric', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.inventory_id' => ['required', 'exists:inventory,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:10000'],
         ]);
 
         // Ensure the patient belongs to this tenant (global scope enforces it).

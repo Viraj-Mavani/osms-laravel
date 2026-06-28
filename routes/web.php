@@ -35,6 +35,8 @@ Route::middleware('auth')->group(function () {
 | Tenant workspace (auth + onboarded)
 |--------------------------------------------------------------------------
 */
+// For production (Hostinger), add 'verified' middleware here.
+// Local/testing environments typically lack a configured mail driver.
 Route::middleware(['auth', 'onboarded'])
     ->prefix('tenant')
     ->name('tenant.')
