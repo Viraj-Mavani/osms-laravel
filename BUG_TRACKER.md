@@ -113,23 +113,40 @@ This tracker spans two QA sessions:
 
 ## Section 2 — Feature gaps (CRUD-completeness milestone)
 
-> ## 🔵 PLANNED — 2026-06-30
 > Confirmed-absent capabilities from the live audit ([QA_TESTING_REPORT_2.md](QA_TESTING_REPORT_2.md) §2).
 > These are **gaps, not defects** — the platform is correct as far as it goes, but key lifecycle
 > actions (edit / delete / cancel / payment / settings) are missing. Every new feature **must** follow
 > the `CLAUDE.md` [VISUAL DESIGN SYSTEM DIRECTIVE]: premium iOS-inspired UI, design tokens only,
 > spring-eased micro-transitions, and a tenant-isolation test per new tenant-owned action.
 
+### Phase A — Core CRUD (✅ COMPLETE — 2026-06-30)
+
 | Ref | Gap | Priority | Status |
 | --- | --- | --- | --- |
-| NB-008 | No edit/update for a Patient profile | High | ✅ Fixed (Phase A) |
-| NB-008b | No edit/delete for Eye Records | High | ✅ Fixed (Phase A) |
-| FG-Settings | No store/tenant settings page (name/address/GSTIN/logo not editable after onboarding) | High | ✅ Fixed (Phase A) |
+| NB-008 | No edit/update for a Patient profile | High | ✅ Fixed |
+| NB-008b | No edit/delete for Eye Records | High | ✅ Fixed |
+| FG-Settings | No store/tenant settings page (name/address/GSTIN/logo not editable after onboarding) | High | ✅ Fixed |
+
+**What shipped:** Shared form partials for patient & eye-record create/edit; reusable confirm modal (premium replacement for `window.confirm`); Tenant\SettingsController with live logo preview; session('error') flash + dismissible success in layout; all infrastructure for Phase B/C deletes. **Tests:** 100 passed / 401 assertions. **Commit:** `3e09ed8`.
+
+---
+
+### Phase B — Order lifecycle + payments (🔵 PLANNED)
+
+| Ref | Gap | Priority | Status |
+| --- | --- | --- | --- |
 | NB-009 | No cancel/void order (+ decremented stock never restored) | High | 🔵 Planned |
 | FG-PaymentLog | No "collect balance" / record-additional-payment action | High | 🔵 Planned |
+| FG-StockLog | No manual stock-adjustment with an audit trail | Medium | 🔵 Planned |
+
+---
+
+### Phase C — Immutability & exports (🔵 PLANNED)
+
+| Ref | Gap | Priority | Status |
+| --- | --- | --- | --- |
 | FG-OrderEdit | Orders are immutable after creation (no line-item / qty editing) | Medium | 🔵 Planned |
 | FG-Delete | No delete/archive for patients / inventory | Medium | 🔵 Planned |
-| FG-StockLog | No manual stock-adjustment with an audit trail | Medium | 🔵 Planned |
 | FG-Export | No CSV/PDF export for inventory or patients | Low-Med | 🔵 Planned |
 
 ### NB-008: No edit/update for a Patient profile
