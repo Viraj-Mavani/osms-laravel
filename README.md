@@ -38,13 +38,6 @@ npm install && npm run build
 To serve locally, use **Laravel Herd** (the bundled PHP) — link the folder and open the
 `.test` URL. (`php artisan serve` may fail to bind a port on some Windows/Herd setups.)
 
-### Seeded demo logins
-
-| Role | Email | Password |
-| --- | --- | --- |
-| Superadmin | `admin@osms.test` | `password` |
-| Store owner | `owner@sahajoptical.test` | `password` |
-
 ## Architecture
 
 ```
@@ -79,10 +72,3 @@ application layer. Verified by the test suite.
 ```bash
 php artisan test
 ```
-
-63 feature tests cover auth, onboarding, tenant isolation, every module, PDF/Excel
-generation, and the Razorpay webhook signature flow.
-
-## Deployment
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for the full Hostinger guide.
