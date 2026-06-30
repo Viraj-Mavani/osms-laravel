@@ -17,6 +17,13 @@
         </a>
     </div>
 
+    @if (request('scan'))
+        <div class="alert alert-primary d-flex align-items-center gap-2 py-2 px-3 rounded-3" role="alert">
+            <i class="bi bi-upc-scan fs-5"></i>
+            <span class="small mb-0">Ready to scan — point your scanner at a barcode, or type to search below.</span>
+        </div>
+    @endif
+
     {{-- Filters --}}
     <form method="GET" action="{{ route('tenant.inventory.index') }}" id="filterForm" class="d-flex flex-wrap gap-2 mb-4">
         <div class="input-group flex-grow-1" style="min-width:16rem;max-width:28rem;">
@@ -113,6 +120,14 @@
         const input = document.getElementById('searchInput');
         if (input) { input.value = code; document.getElementById('filterForm').submit(); }
     }
+
+    // NB-016: when arriving via the dashboard "Scan barcode" shortcut, focus the search box
+    // so a hardware scanner (or typing) works immediately.
+    document.addEventListener('DOMContentLoaded', () => {
+        if (new URLSearchParams(location.search).has('scan')) {
+            document.getElementById('searchInput')?.focus();
+        }
+    });
 </script>
 @endpush
 @endsection

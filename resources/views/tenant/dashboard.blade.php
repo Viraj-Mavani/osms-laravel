@@ -45,12 +45,12 @@
                         ['route' => 'tenant.orders.create', 'label' => 'New order', 'desc' => 'Create a POS estimate', 'icon' => 'bi-cart-plus'],
                         ['route' => 'tenant.patients.create', 'label' => 'New patient', 'desc' => 'Register a customer', 'icon' => 'bi-person-plus'],
                         ['route' => 'tenant.inventory.create', 'label' => 'Add stock', 'desc' => 'New frame or lens', 'icon' => 'bi-plus-square'],
-                        ['route' => 'tenant.inventory.index', 'label' => 'Scan barcode', 'desc' => 'Look up an item', 'icon' => 'bi-upc-scan'],
+                        ['route' => 'tenant.inventory.index', 'params' => ['scan' => 1], 'label' => 'Scan barcode', 'desc' => 'Look up an item', 'icon' => 'bi-upc-scan'],
                     ];
                 @endphp
                 @foreach ($actions as $a)
                     <div class="col-sm-6">
-                        <a href="{{ safe_route($a['route']) }}"
+                        <a href="{{ safe_route($a['route'], $a['params'] ?? []) }}"
                            class="card card-lift border-0 shadow-sm rounded-4 text-decoration-none text-reset h-100">
                             <div class="card-body d-flex align-items-center gap-3 p-3">
                                 <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary"

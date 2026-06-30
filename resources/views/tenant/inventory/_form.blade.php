@@ -81,6 +81,10 @@
             <label for="selling_price" class="form-label small fw-medium mb-1">Selling price (₹) *</label>
             <input id="selling_price" name="selling_price" type="number" step="0.01" min="0" required
                    value="{{ $val('selling_price') }}" class="form-control @error('selling_price') is-invalid @enderror">
+            <div id="marginWarning" class="d-none align-items-center gap-1 mt-1 text-warning" style="font-size:.72rem;">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>Selling price is below cost — this item will sell at a loss.</span>
+            </div>
         </div>
         <div class="col-6 col-lg-3">
             <label for="stock_qty" class="form-label small fw-medium mb-1">Stock quantity</label>
@@ -112,3 +116,24 @@
     </script>
     @endpush
 @endif
+
+@push('scripts')
+<script>
+    // NB-004: warn (don't block) when selling price drops below cost — clearance sales are allowed.
+    document.addEventListener('DOMContentLoaded', () => {
+        const cost = document.getElementById('cost_price');
+        const sell = document.getElementById('selling_price');
+        const warn = document.getElementById('marginWarning');
+        if (!cost || !sell || !warn) return;
+        const check = () => {
+            const c = parseFloat(cost.value), s = parseFloat(sell.value);
+            const below = Number.isFinite(c) && Number.isFinite(s) && s < c;
+            warn.classList.toggle('d-none', !below);
+            warn.classList.toggle('d-flex', below);
+        };
+        cost.addEventListener('input', check);
+        sell.addEventListener('input', check);
+        check();
+    });
+</script>
+@endpush

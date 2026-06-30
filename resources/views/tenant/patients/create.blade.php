@@ -29,10 +29,23 @@
                     </div>
                     <div class="col-sm-6">
                         <label for="phone" class="form-label small fw-medium mb-1">Phone *</label>
-                        <input id="phone" name="phone" type="tel" value="{{ old('phone') }}"
-                               class="form-control @error('phone') is-invalid @enderror"
-                               required placeholder="+91 98765 43210">
-                        @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        @php
+                            $codes = ['+91', '+1', '+44', '+971', '+61', '+65', '+880', '+977'];
+                            $oldCode = old('country_code', '+91');
+                            // old('phone') is the normalised "{code} {national}" — show only the national part.
+                            $oldNational = \Illuminate\Support\Str::of(old('phone', ''))->afterLast(' ')->toString();
+                        @endphp
+                        <div class="input-group">
+                            <select name="country_code" class="form-select flex-grow-0 w-auto" aria-label="Country code">
+                                @foreach ($codes as $code)
+                                    <option value="{{ $code }}" @selected($oldCode === $code)>{{ $code }}</option>
+                                @endforeach
+                            </select>
+                            <input id="phone" name="phone" type="tel" value="{{ $oldNational }}"
+                                   class="form-control @error('phone') is-invalid @enderror"
+                                   required placeholder="98765 43210">
+                            @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
                     </div>
                     <div class="col-sm-6">
                         <label for="age" class="form-label small fw-medium mb-1">Age</label>

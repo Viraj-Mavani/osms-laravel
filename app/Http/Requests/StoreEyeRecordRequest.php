@@ -33,4 +33,23 @@ class StoreEyeRecordRequest extends FormRequest
 
         return $rules;
     }
+
+    /** Reject a fully blank record — at least one measurement (or PD) is required. */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $fields = ['pd'];
+            foreach (['od', 'os'] as $eye) {
+                foreach (['sph', 'cyl', 'axis', 'add', 'spl', 'dv', 'nv'] as $f) {
+                    $fields[] = "{$eye}_{$f}";
+                }
+            }
+
+            $hasAny = collect($fields)->contains(fn ($field) => $this->filled($field));
+
+            if (! $hasAny) {
+                $validator->errors()->add('od_sph', 'Enter at least one measurement before saving.');
+            }
+        });
+    }
 }

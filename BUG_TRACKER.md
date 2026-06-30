@@ -1,14 +1,130 @@
 # OSMS Laravel — Bug Tracker
 
-**Date:** 2026-06-27 · **Companion:** [QA_TESTING_REPORT.md](QA_TESTING_REPORT.md)
-**Scope:** Only **verified** defects (each confirmed against source and the passing test suite).
-False positives are documented in QA_TESTING_REPORT §5, not here. Ordered by severity.
+**Companion:** [QA_TESTING_REPORT_1.md](QA_TESTING_REPORT_1.md) (session 1),
+[QA_TESTING_REPORT_2.md](QA_TESTING_REPORT_2.md) (session 2 live audit).
+**Scope:** Only **verified** defects (each confirmed against source). False positives are documented
+in the QA reports, not here.
 
-> ## ✅ ALL BUGS FIXED — 2026-06-27
+This tracker spans two QA sessions:
+- **Session 1 (2026-06-27)** — BUG-001 … BUG-010, all ✅ Fixed.
+- **Session 2 (2026-06-28)** — NB-001 … NB-016, from the live audit ([QA_TESTING_REPORT_2.md](QA_TESTING_REPORT_2.md) Section 1).
+
+---
+
+## Session 2 — Live audit bugs (2026-06-28)
+
+> ## ✅ ALL SECTION 1 BUGS FIXED — 2026-06-28
+> All 7 confirmed-real bugs below are resolved. Regression coverage added in
+> [`tests/Feature/Phase9LiveAuditFixesTest.php`](tests/Feature/Phase9LiveAuditFixesTest.php)
+> (NB-001/002/007 are inline front-end JS, verified via `npm run build` + manual check).
+> **Test suite: 91 passed (379 assertions), 0 failures.** `npm run build` succeeds.
+> Feature gaps (edit/delete/cancel/payment/settings) remain a backlog at the end of this file.
+
+| ID | Title | Severity | Status |
+| --- | --- | --- | --- |
+| NB-001 | Alpine `@submit` handler crashes with `Unexpected token 'return'` | **High** | ✅ Fixed |
+| NB-002 | `Sortable is not defined` — Kanban drag-and-drop broken | **High** | ✅ Fixed |
+| NB-003 | Patient phone accepts free-text garbage (no format validation) | Medium | ✅ Fixed |
+| NB-004 | Selling price can be saved below cost price (negative margin) | Medium | ✅ Fixed |
+| NB-005 | A completely blank eye record can be saved | Medium-Low | ✅ Fixed |
+| NB-007 | Quantity "−" (decrement) button renders invisibly | Low | ✅ Fixed |
+| NB-016 | Dashboard "Scan barcode" quick action is a misleading shortcut | Low | ✅ Fixed |
+
+### NB-001: Alpine `@submit` handler crashes with `Unexpected token 'return'`
+- **Status:** ✅ Fixed — [orders/create.blade.php:19](resources/views/tenant/orders/create.blade.php#L19) changed `@submit="return validateForm($event)"` → `@submit="validateForm($event)"` (the handler already calls `preventDefault()`).
+- **Severity:** High (client-side order validation never runs; console error on every submit).
+- **Location:** [resources/views/tenant/orders/create.blade.php:19](resources/views/tenant/orders/create.blade.php#L19).
+- **Description:** The form uses `@submit="return validateForm($event)"`. Alpine wraps an `x-on`
+  expression as `return (<expr>)`, so this becomes `return (return validateForm($event))` — a
+  **double `return`** → `SyntaxError: Unexpected token 'return'`. The handler already calls
+  `e.preventDefault()`, so the leading `return` is wrong and unnecessary.
+- **Steps to reproduce / trigger:** Open the order create page; the console logs the Alpine
+  expression error. The advance-exceeds-total `alert()` guard never fires.
+- **Potential root cause:** Alpine event expressions must be statements, not `return …`.
+- **Recommended fix:** `@submit="validateForm($event)"` (drop `return`).
+
+### NB-002: `Sortable is not defined` — Kanban drag-and-drop broken
+- **Status:** ✅ Fixed — [orders/index.blade.php](resources/views/tenant/orders/index.blade.php) wraps the Sortable init in a `DOMContentLoaded` guard with an `if (!window.Sortable) return;` bail (mirrors the BUG-001 Ctrl+K fix).
+- **Severity:** High (advertised drag-and-drop is completely non-functional).
+- **Location:** [resources/views/tenant/orders/index.blade.php:140-151](resources/views/tenant/orders/index.blade.php#L140-L151); library imported in [resources/js/app.js:12-13](resources/js/app.js#L12-L13).
+- **Description:** **Same class of bug as BUG-001 (session 1).** The inline classic `<script>` runs
+  during HTML parse and calls `new Sortable(col, …)`, but `window.Sortable` comes from the deferred
+  `@vite` ESM bundle that executes *after* parsing → `ReferenceError: Sortable is not defined`.
+- **Steps to reproduce / trigger:** Open Orders → Board view; console shows the ReferenceError and
+  cards cannot be dragged between columns.
+- **Potential root cause:** Inline classic script touches a deferred-ESM global before it exists.
+- **Recommended fix:** Wrap the Sortable init in a `DOMContentLoaded` guard with an `if (!window.Sortable) return;`
+  bail, mirroring the [global-search.blade.php](resources/views/partials/global-search.blade.php) fix.
+
+### NB-003: Patient phone accepts free-text garbage
+- **Status:** ✅ Fixed — [StorePatientRequest.php](app/Http/Requests/StorePatientRequest.php) normalises `{country_code} {national}` and validates `regex:/^\+\d{1,4}\s\d{7,15}$/`; [patients/create.blade.php](resources/views/tenant/patients/create.blade.php) adds a country-code selector (default +91). Covered by `Phase9LiveAuditFixesTest::test_patient_phone_rejects_garbage` + `…_accepts_country_code`.
+- **Severity:** Medium (data integrity).
+- **Location:** [app/Http/Requests/StorePatientRequest.php:21-27](app/Http/Requests/StorePatientRequest.php#L21-L27).
+- **Description:** The phone rule is `['required','string','max:30', Rule::unique(...)]` with no format
+  validation, so `"abc-invalid-phone"` is accepted and stored. (Note: duplicate **detection already
+  exists** — phone is unique per tenant; only **format** validation is missing.)
+- **Steps to reproduce / trigger:** Create a patient with phone `abc-invalid-phone` → saved.
+- **Potential root cause:** No regex/format rule on the phone field.
+- **Recommended fix:** Add a phone format rule, e.g. `'regex:/^[0-9+\-\s()]{7,15}$/'`.
+
+### NB-004: Selling price can be saved below cost price
+- **Status:** ✅ Fixed (allow-but-warn, per product decision) — [inventory/_form.blade.php](resources/views/tenant/inventory/_form.blade.php) shows a live "below cost" warning when selling < cost; the save is intentionally **not** blocked (clearance sales). Covered by `Phase9LiveAuditFixesTest::test_selling_below_cost_is_allowed`.
+- **Severity:** Medium (financial integrity).
+- **Location:** [app/Http/Requests/InventoryRequest.php:21-22](app/Http/Requests/InventoryRequest.php#L21-L22).
+- **Description:** `cost_price` and `selling_price` are validated `numeric|min:0` independently; there
+  is no cross-field check that `selling_price >= cost_price`, so a negative-margin item saves silently.
+- **Steps to reproduce / trigger:** Edit an item: cost ₹9,999, selling ₹100 → saves with no warning.
+- **Potential root cause:** No cross-field validation.
+- **Recommended fix:** Add `'selling_price' => [..., 'gte:cost_price']` (or a soft confirm-on-warn UX).
+
+### NB-005: A completely blank eye record can be saved
+- **Status:** ✅ Fixed — [StoreEyeRecordRequest.php](app/Http/Requests/StoreEyeRecordRequest.php) adds a `withValidator` after-check requiring at least one measurement (any `od_*`/`os_*` field or `pd`). Covered by `Phase9LiveAuditFixesTest::test_blank_eye_record_is_rejected` + `…_with_one_measurement_saves`.
+- **Severity:** Medium-Low (data quality).
+- **Location:** [app/Http/Requests/StoreEyeRecordRequest.php:16-32](app/Http/Requests/StoreEyeRecordRequest.php#L16-L32).
+- **Description:** Every field is `nullable` with no "at least one measurement required" rule, so an
+  all-empty submission creates an empty `eye_records` row in the patient timeline.
+- **Steps to reproduce / trigger:** Submit the eye-record form with all fields empty → saved.
+- **Potential root cause:** No `required_without_all` / cross-field presence rule.
+- **Recommended fix:** Require at least one measurement (e.g. a custom validator or
+  `required_without_all` across the SPH/CYL fields).
+
+### NB-007: Quantity "−" (decrement) button renders invisibly
+- **Status:** ✅ Fixed — [orders/create.blade.php:126-128](resources/views/tenant/orders/create.blade.php#L126-L128) replaced the U+2212 / "+" glyphs with `<i class="bi bi-dash-lg">` / `<i class="bi bi-plus-lg">` icons (+ aria-labels).
+- **Severity:** Low (UX; "+" works and qty also clamps).
+- **Location:** [resources/views/tenant/orders/create.blade.php:126](resources/views/tenant/orders/create.blade.php#L126).
+- **Description:** The decrement button's label is the Unicode **MINUS SIGN `−` (U+2212)**, not an
+  ASCII hyphen; the body font (Plus Jakarta Sans) likely lacks that glyph, so it renders zero-width
+  while "+" (U+002B) shows. Markup/classes for both buttons are otherwise identical.
+- **Steps to reproduce / trigger:** Add an order line item; the decrement control is not visible.
+- **Potential root cause:** Missing glyph for U+2212 in the chosen font.
+- **Recommended fix:** Use an ASCII `-`, a `<i class="bi bi-dash"></i>` icon, or set a min-width.
+
+### NB-016: Dashboard "Scan barcode" quick action is a misleading shortcut
+- **Status:** ✅ Fixed — [dashboard.blade.php:48](resources/views/tenant/dashboard.blade.php#L48) now links to `inventory.index?scan=1`; [inventory/index.blade.php](resources/views/tenant/inventory/index.blade.php) shows a "Ready to scan" banner and auto-focuses the search box (the page already routes hardware-scanner input to the search). Covered by `Phase9LiveAuditFixesTest::test_inventory_scan_shortcut_renders`.
+- **Severity:** Low (UX expectation mismatch).
+- **Location:** [resources/views/tenant/dashboard.blade.php:48](resources/views/tenant/dashboard.blade.php#L48).
+- **Description:** The "Scan barcode" card routes to `tenant.inventory.index` (the plain list); it
+  opens no scan modal/camera/lookup, even though a scan endpoint exists
+  ([InventoryController::scan](app/Http/Controllers/Tenant/InventoryController.php#L73)).
+- **Steps to reproduce / trigger:** Dashboard → click "Scan barcode" → lands on the inventory list.
+- **Potential root cause:** Card points at the list route; no scan UI surfaced.
+- **Recommended fix:** Point the card at a scan modal (reuse the barcode-listener partial) or a
+  `?scan=1` state that auto-opens a scan input.
+
+### Backlog — Session 2 feature gaps (not bugs; see [QA_TESTING_REPORT_2.md](QA_TESTING_REPORT_2.md) §2)
+Patient edit · eye-record edit/delete · order cancel/void (+ stock restore) · collect-balance /
+record payment · store/tenant settings page · delete patients/inventory/orders · order line-item
+editing · stock-adjustment audit log · CSV/PDF export for inventory & patients. To be scoped as a
+CRUD-completeness milestone; each new tenant-owned action needs a tenant-isolation test per `CLAUDE.md`.
+
+---
+
+## Session 1 — QA bugs (2026-06-27)
+
+> ## ✅ ALL SESSION 1 BUGS FIXED — 2026-06-27
 > All 10 entries below are resolved. Regression coverage added in
 > [`tests/Feature/Phase8QaFixesTest.php`](tests/Feature/Phase8QaFixesTest.php) (BUG-001 is front-end
-> JS, verified manually). **Test suite: 80 passed (341 assertions), 0 failures**
-> (was 70 before this session). `npm run build` succeeds. Each bug carries a
+> JS, verified manually). **Test suite: 85 passed, 0 failures.** Each bug carries a
 > **Status: ✅ Fixed** line describing the exact change.
 
 | ID | Title | Severity | Status |

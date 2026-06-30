@@ -16,7 +16,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('tenant.orders.store') }}" @submit="return validateForm($event)">
+    <form method="POST" action="{{ route('tenant.orders.store') }}" @submit="validateForm($event)">
         @csrf
         <input type="hidden" name="patient_id" :value="patientId">
         <input type="hidden" name="eye_record_id" :value="eyeRecordId">
@@ -123,9 +123,9 @@
                                             <td x-text="it.label"></td>
                                             <td>
                                                 <div class="input-group input-group-sm" style="width:7rem;">
-                                                    <button type="button" class="btn btn-outline-secondary" @click="changeQty(it,-1)">−</button>
+                                                    <button type="button" class="btn btn-outline-secondary" @click="changeQty(it,-1)" aria-label="Decrease quantity"><i class="bi bi-dash-lg"></i></button>
                                                     <input type="text" class="form-control text-center" :value="it.quantity" readonly>
-                                                    <button type="button" class="btn btn-outline-secondary" @click="changeQty(it,1)">+</button>
+                                                    <button type="button" class="btn btn-outline-secondary" @click="changeQty(it,1)" aria-label="Increase quantity"><i class="bi bi-plus-lg"></i></button>
                                                 </div>
                                             </td>
                                             <td class="text-end font-monospace" x-text="money(it.unit_price)"></td>

@@ -31,6 +31,7 @@ class Phase2PatientTest extends TestCase
 
         $this->actingAs($user)->post(route('tenant.patients.store'), [
             'name' => 'Rahul Kumar',
+            'country_code' => '+91',
             'phone' => '9876543210',
             'age' => 32,
             'gender' => 'male',
@@ -38,7 +39,7 @@ class Phase2PatientTest extends TestCase
 
         $this->assertDatabaseHas('patients', [
             'name' => 'Rahul Kumar',
-            'phone' => '9876543210',
+            'phone' => '+91 9876543210', // country code + national, normalised on save
             'tenant_id' => $user->tenant_id,
         ]);
     }
@@ -47,9 +48,9 @@ class Phase2PatientTest extends TestCase
     {
         $user = $this->storeUser();
         $this->actingAs($user);
-        Patient::create(['name' => 'A', 'phone' => '111']);
+        Patient::create(['name' => 'A', 'phone' => '+91 9876543210']);
 
-        $this->post(route('tenant.patients.store'), ['name' => 'B', 'phone' => '111'])
+        $this->post(route('tenant.patients.store'), ['name' => 'B', 'country_code' => '+91', 'phone' => '9876543210'])
             ->assertSessionHasErrors('phone');
     }
 
@@ -57,10 +58,10 @@ class Phase2PatientTest extends TestCase
     {
         $u1 = $this->storeUser();
         $this->actingAs($u1);
-        Patient::create(['name' => 'A', 'phone' => '111']);
+        Patient::create(['name' => 'A', 'phone' => '+91 9876543210']);
 
         $u2 = $this->storeUser();
-        $this->actingAs($u2)->post(route('tenant.patients.store'), ['name' => 'B', 'phone' => '111'])
+        $this->actingAs($u2)->post(route('tenant.patients.store'), ['name' => 'B', 'country_code' => '+91', 'phone' => '9876543210'])
             ->assertRedirect();
 
         $this->assertDatabaseCount('patients', 2);

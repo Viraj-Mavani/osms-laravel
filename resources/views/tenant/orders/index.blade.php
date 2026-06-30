@@ -136,19 +136,29 @@
         });
     }
 
-    // Kanban drag-and-drop (only present in board view).
-    document.querySelectorAll('.kanban-column').forEach((col) => {
-        new Sortable(col, {
-            group: 'orders', animation: 150, ghostClass: 'sortable-ghost',
-            onEnd(evt) {
-                const newStatus = evt.to.dataset.status;
-                const id = evt.item.dataset.id;
-                if (newStatus !== evt.from.dataset.status) {
-                    updateStatus(id, newStatus).then(() => window.location.reload());
-                }
-            },
+    // Kanban drag-and-drop (only present in board view). Wait for DOMContentLoaded so the
+    // deferred Vite ESM bundle has defined window.Sortable — an inline classic script runs
+    // during parse, before deferred modules, so touching Sortable synchronously would throw.
+    function initKanbanDnd() {
+        if (!window.Sortable) return;
+        document.querySelectorAll('.kanban-column').forEach((col) => {
+            new Sortable(col, {
+                group: 'orders', animation: 150, ghostClass: 'sortable-ghost',
+                onEnd(evt) {
+                    const newStatus = evt.to.dataset.status;
+                    const id = evt.item.dataset.id;
+                    if (newStatus !== evt.from.dataset.status) {
+                        updateStatus(id, newStatus).then(() => window.location.reload());
+                    }
+                },
+            });
         });
-    });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initKanbanDnd);
+    } else {
+        initKanbanDnd();
+    }
 </script>
 @endpush
 @endsection

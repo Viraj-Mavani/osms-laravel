@@ -19,7 +19,8 @@ class StorePatientRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'phone' => [
-                'required', 'string', 'max:30',
+                // Normalised to "{code} {national}" in prepareForValidation, e.g. "+91 9876543210".
+                'required', 'string', 'max:30', 'regex:/^\+\d{1,4}\s\d{7,15}$/',
                 // Unique per tenant + phone (matches the Supabase constraint).
                 Rule::unique('patients')
                     ->where('tenant_id', $this->user()->tenant_id)
@@ -34,14 +35,20 @@ class StorePatientRequest extends FormRequest
     {
         return [
             'phone.unique' => 'A patient with this phone number already exists in your store.',
+            'phone.regex' => 'Enter a valid phone number (7–15 digits).',
         ];
     }
 
     protected function prepareForValidation(): void
     {
+        // Combine the country-code selector with the national number into one stored value.
+        // Default to +91 (India) and strip any separators the user typed in the number.
+        $code = trim((string) ($this->country_code ?: '+91'));
+        $national = preg_replace('/\D/', '', (string) $this->phone);
+
         $this->merge([
             'name' => trim((string) $this->name),
-            'phone' => trim((string) $this->phone),
+            'phone' => $national !== '' ? $code . ' ' . $national : '',
             'gender' => $this->gender ?: null,
         ]);
     }
