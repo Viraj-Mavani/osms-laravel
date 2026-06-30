@@ -10,6 +10,11 @@
         ['route' => 'tenant.orders.index', 'label' => 'Orders', 'icon' => 'bi-cart3', 'match' => 'tenant.orders.*'],
         ['route' => 'tenant.analytics.index', 'label' => 'Analytics', 'icon' => 'bi-bar-chart', 'match' => 'tenant.analytics.*'],
     ];
+
+    // Settings is store-admin only (matches the role-gated route group).
+    if ($user?->isStoreAdmin()) {
+        $tenantLinks[] = ['route' => 'tenant.settings.edit', 'label' => 'Settings', 'icon' => 'bi-sliders', 'match' => 'tenant.settings.*'];
+    }
     $superLinks = [
         ['route' => 'superadmin.dashboard', 'label' => 'Platform', 'icon' => 'bi-shield-check', 'match' => 'superadmin.*'],
     ];

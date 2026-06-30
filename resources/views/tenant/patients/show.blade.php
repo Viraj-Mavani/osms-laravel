@@ -24,6 +24,9 @@
             </div>
         </div>
         <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('tenant.patients.edit', $patient) }}" class="btn btn-light">
+                <i class="bi bi-pencil me-1"></i> Edit
+            </a>
             <a href="{{ route('tenant.eye-records.create', $patient) }}" class="btn btn-outline-primary">
                 <i class="bi bi-plus-lg me-1"></i> New eye record
             </a>

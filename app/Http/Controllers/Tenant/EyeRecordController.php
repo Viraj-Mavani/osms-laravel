@@ -28,4 +28,30 @@ class EyeRecordController extends Controller
             ->route('tenant.patients.show', $patient)
             ->with('status', 'Eye record saved.');
     }
+
+    public function edit(EyeRecord $record): View
+    {
+        $patient = $record->patient;
+
+        return view('tenant.eye-records.edit', compact('patient', 'record'));
+    }
+
+    public function update(StoreEyeRecordRequest $request, EyeRecord $record): RedirectResponse
+    {
+        $record->update($request->validated());
+
+        return redirect()
+            ->route('tenant.patients.show', $record->patient)
+            ->with('status', 'Eye record updated.');
+    }
+
+    public function destroy(EyeRecord $record): RedirectResponse
+    {
+        $patient = $record->patient;
+        $record->delete();
+
+        return redirect()
+            ->route('tenant.patients.show', $patient)
+            ->with('status', 'Eye record deleted.');
+    }
 }

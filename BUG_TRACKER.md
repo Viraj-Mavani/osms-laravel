@@ -111,11 +111,89 @@ This tracker spans two QA sessions:
 - **Recommended fix:** Point the card at a scan modal (reuse the barcode-listener partial) or a
   `?scan=1` state that auto-opens a scan input.
 
-### Backlog — Session 2 feature gaps (not bugs; see [QA_TESTING_REPORT_2.md](QA_TESTING_REPORT_2.md) §2)
-Patient edit · eye-record edit/delete · order cancel/void (+ stock restore) · collect-balance /
-record payment · store/tenant settings page · delete patients/inventory/orders · order line-item
-editing · stock-adjustment audit log · CSV/PDF export for inventory & patients. To be scoped as a
-CRUD-completeness milestone; each new tenant-owned action needs a tenant-isolation test per `CLAUDE.md`.
+## Section 2 — Feature gaps (CRUD-completeness milestone)
+
+> ## 🔵 PLANNED — 2026-06-30
+> Confirmed-absent capabilities from the live audit ([QA_TESTING_REPORT_2.md](QA_TESTING_REPORT_2.md) §2).
+> These are **gaps, not defects** — the platform is correct as far as it goes, but key lifecycle
+> actions (edit / delete / cancel / payment / settings) are missing. Every new feature **must** follow
+> the `CLAUDE.md` [VISUAL DESIGN SYSTEM DIRECTIVE]: premium iOS-inspired UI, design tokens only,
+> spring-eased micro-transitions, and a tenant-isolation test per new tenant-owned action.
+
+| Ref | Gap | Priority | Status |
+| --- | --- | --- | --- |
+| NB-008 | No edit/update for a Patient profile | High | ✅ Fixed (Phase A) |
+| NB-008b | No edit/delete for Eye Records | High | ✅ Fixed (Phase A) |
+| FG-Settings | No store/tenant settings page (name/address/GSTIN/logo not editable after onboarding) | High | ✅ Fixed (Phase A) |
+| NB-009 | No cancel/void order (+ decremented stock never restored) | High | 🔵 Planned |
+| FG-PaymentLog | No "collect balance" / record-additional-payment action | High | 🔵 Planned |
+| FG-OrderEdit | Orders are immutable after creation (no line-item / qty editing) | Medium | 🔵 Planned |
+| FG-Delete | No delete/archive for patients / inventory | Medium | 🔵 Planned |
+| FG-StockLog | No manual stock-adjustment with an audit trail | Medium | 🔵 Planned |
+| FG-Export | No CSV/PDF export for inventory or patients | Low-Med | 🔵 Planned |
+
+### NB-008: No edit/update for a Patient profile
+- **Status:** ✅ Fixed (Phase A, 2026-06-30).
+- **Priority:** High.
+- **Location:** [routes/tenant.php:28-29](routes/tenant.php#L28-L29); [PatientController](app/Http/Controllers/Tenant/PatientController.php) `edit`/`update`.
+- **Gap (resolved):** A patient's name/phone/age/gender could not be corrected after creation.
+- **Fix:** Added `edit`/`update` routes + `PatientController@edit/@update`; extracted the create form into a shared [`patients/_form.blade.php`](resources/views/tenant/patients/_form.blade.php) (with the country-code selector) reused by create + edit; added an "Edit" button to the patient header. `StorePatientRequest` reused unchanged (its unique rule already `->ignore()`s the bound patient). Cross-tenant update returns 404 (tested).
+
+### NB-008b: No edit/delete for Eye Records
+- **Status:** ✅ Fixed (Phase A, 2026-06-30).
+- **Priority:** High.
+- **Location:** [routes/tenant.php:34-36](routes/tenant.php#L34-L36); [EyeRecordController](app/Http/Controllers/Tenant/EyeRecordController.php) `edit`/`update`/`destroy`.
+- **Gap (resolved):** A mistyped prescription could neither be corrected nor removed from the patient timeline.
+- **Fix:** Added `edit`/`update`/`destroy` for eye records (reuses `StoreEyeRecordRequest`); extracted a shared [eye-record `_form`](resources/views/tenant/eye-records/_form.blade.php); added a kebab dropdown (Edit + Delete) to [`<x-eye-record-card>`](resources/views/components/eye-record-card.blade.php). Delete routes through the reusable [confirm modal](resources/views/partials/confirm-modal.blade.php). Cross-tenant delete returns 404 (tested).
+
+### FG-Settings: No store/tenant settings page
+- **Status:** ✅ Fixed (Phase A, 2026-06-30).
+- **Priority:** High.
+- **Location:** [routes/tenant.php](routes/tenant.php) (`settings` group, `role:store_admin,superadmin`); [SettingsController](app/Http/Controllers/Tenant/SettingsController.php); [settings/edit.blade.php](resources/views/tenant/settings/edit.blade.php).
+- **Gap (resolved):** Store name, address, GSTIN/tax id, and logo were frozen at onboarding; receipts could never be corrected.
+- **Fix:** New `Tenant\SettingsController` (`edit`/`update`), `role:store_admin,superadmin` gated; premium card-based settings page with live logo preview + "remove logo" option; logo replace uses the same try/catch safe-upload as onboarding. Sidebar "Settings" link shown to store admins only. Role test confirms staff get 403.
+
+### NB-009: No cancel/void order (+ stock restore)
+- **Status:** 🔵 Planned
+- **Priority:** High.
+- **Location:** [OrderController](app/Http/Controllers/Tenant/OrderController.php) has only `updateStatus`; orders table status enum is `['pending','ready_for_pickup','delivered']` ([migration](database/migrations/2026_01_01_000006_create_orders_table.php#L16)).
+- **Gap:** A wrong order cannot be cancelled, and the stock drawn down at creation is never returned.
+- **Planned approach:** Add a `cancelled` status (portable migration: raw `MODIFY` on MySQL, no-op on SQLite) + `cancelled_at`/`cancel_reason`; `OrderController@cancel` restores each line's `stock_qty` inside a transaction and writes a stock-movement (see FG-StockLog). A cancelled order is read-only. Tests for stock restoration + idempotency (can't cancel twice).
+
+### FG-PaymentLog: No "collect balance" / record-payment action
+- **Status:** 🔵 Planned
+- **Priority:** High.
+- **Location:** Order tracks only `advance_paid`/`balance_due`; no payment history.
+- **Gap:** A delivered order with `balance_due > 0` is frozen — there is no way to record the customer paying the rest, and no payment audit trail.
+- **Planned approach:** New tenant-owned `payments` table (UUID, amount, method, note, recorded_by); `OrderController@recordPayment` adds a payment and bumps `advance_paid` (capped at `total_amount`, model keeps `balance_due` in sync); a "Record payment" action + payment history on the order page. Tests: over-payment clamp, balance reaches zero, tenant isolation.
+
+### FG-OrderEdit: Orders are immutable after creation
+- **Status:** 🔵 Planned
+- **Priority:** Medium.
+- **Location:** [OrderController](app/Http/Controllers/Tenant/OrderController.php) — no edit/update for line items.
+- **Gap:** Quantities/line items cannot be changed after the order is placed; the only recourse is cancel + re-create.
+- **Planned approach:** Scope-limited edit of line items with full stock reconciliation (re-run the oversell guard, diff old vs new quantities, adjust stock + total) inside a transaction; reuse the Alpine order builder. **Highest-risk item** (touches stock + money) — schedule last, behind robust tests. Blocked orders: cannot edit a `delivered`/`cancelled` order.
+
+### FG-Delete: No delete/archive for patients / inventory
+- **Status:** 🔵 Planned
+- **Priority:** Medium.
+- **Location:** No `destroy` routes for patients or inventory.
+- **Gap:** Test/junk rows (e.g. an old "abc-invalid-phone" patient) cannot be removed; mis-added items linger.
+- **Planned approach:** Soft-delete (`SoftDeletes`) for patients & inventory with a **30-day retention window**: a confirm modal that informs the user the record is recoverable for 30 days, an **Archive/Trash view** to restore or permanently delete now, and a scheduled command (`patients:purge-trashed`) that hard-deletes records soft-deleted > 30 days. Guard inventory delete when referenced by open orders. Tenant-isolation + restore + purge tests. (Order removal is handled by NB-009 cancel, not hard delete.)
+
+### FG-StockLog: No manual stock-adjustment audit
+- **Status:** 🔵 Planned
+- **Priority:** Medium.
+- **Location:** Stock changes only via the inventory edit form; no reason/log trail.
+- **Gap:** Damage/loss/recount adjustments are silent — no who/why/when.
+- **Planned approach:** New tenant-owned `stock_movements` table (UUID, inventory_id, delta, reason, type[order|cancel|adjustment], recorded_by); a "Adjust stock" action on the item page; order placement + NB-009 cancel also write movements. A movement history panel. Tests for ledger correctness + isolation.
+
+### FG-Export: No CSV/PDF export for inventory or patients
+- **Status:** 🔵 Planned
+- **Priority:** Low-Med.
+- **Location:** Only [LedgerExport](app/Exports/LedgerExport.php) exists.
+- **Gap:** Inventory and patient lists can't be exported for offline use/backup.
+- **Planned approach:** `InventoryExport` + `PatientsExport` (Maatwebsite, `FromQuery` + chunking + the BUG-007 `MAX_ROWS` cap) honoring the active filters; export buttons on each index. Tests assert tenant-scoped row counts.
 
 ---
 

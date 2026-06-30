@@ -30,12 +30,42 @@
                     </p>
                 </div>
             </div>
-            @if (! is_null($record->pd))
-                <div class="border rounded-3 bg-body px-3 py-1 text-end">
-                    <p class="mb-0 text-muted-foreground text-uppercase" style="font-size:.62rem;letter-spacing:.05em;">PD</p>
-                    <p class="mb-0 fw-semibold font-display">{{ $record->pd }} mm</p>
+            <div class="d-flex align-items-center gap-2">
+                @if (! is_null($record->pd))
+                    <div class="border rounded-3 bg-body px-3 py-1 text-end">
+                        <p class="mb-0 text-muted-foreground text-uppercase" style="font-size:.62rem;letter-spacing:.05em;">PD</p>
+                        <p class="mb-0 fw-semibold font-display">{{ $record->pd }} mm</p>
+                    </div>
+                @endif
+
+                <div class="dropdown no-print">
+                    <button class="btn btn-light btn-sm rounded-3 d-inline-flex align-items-center justify-content-center"
+                            style="width:2rem;height:2rem;" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                            aria-label="Record actions">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow rounded-3 border-0" style="box-shadow: var(--shadow-overlay);">
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{{ route('tenant.eye-records.edit', $record) }}">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="POST" action="{{ route('tenant.eye-records.destroy', $record) }}" class="m-0">
+                                @csrf
+                                @method('DELETE')
+                                <button type="button" class="dropdown-item d-flex align-items-center gap-2 text-danger"
+                                        data-confirm="Delete the {{ $record->created_at->format('d M Y') }} eye prescription? This action cannot be undone."
+                                        data-confirm-title="Delete eye record"
+                                        data-confirm-label="Delete record">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
                 </div>
-            @endif
+            </div>
         </div>
 
         <div class="table-responsive">

@@ -15,6 +15,7 @@ use App\Http\Controllers\Tenant\InventoryController;
 use App\Http\Controllers\Tenant\OrderController;
 use App\Http\Controllers\Tenant\PatientController;
 use App\Http\Controllers\Tenant\SearchController;
+use App\Http\Controllers\Tenant\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 // ---- Global search (Cmd+K) ----
@@ -25,10 +26,15 @@ Route::get('patients', [PatientController::class, 'index'])->name('patients.inde
 Route::get('patients/create', [PatientController::class, 'create'])->name('patients.create');
 Route::post('patients', [PatientController::class, 'store'])->name('patients.store');
 Route::get('patients/{patient}', [PatientController::class, 'show'])->name('patients.show');
+Route::get('patients/{patient}/edit', [PatientController::class, 'edit'])->name('patients.edit');
+Route::put('patients/{patient}', [PatientController::class, 'update'])->name('patients.update');
 
 // ---- Eye records (nested under a patient) ----
 Route::get('patients/{patient}/records/create', [EyeRecordController::class, 'create'])->name('eye-records.create');
 Route::post('patients/{patient}/records', [EyeRecordController::class, 'store'])->name('eye-records.store');
+Route::get('records/{record}/edit', [EyeRecordController::class, 'edit'])->name('eye-records.edit');
+Route::put('records/{record}', [EyeRecordController::class, 'update'])->name('eye-records.update');
+Route::delete('records/{record}', [EyeRecordController::class, 'destroy'])->name('eye-records.destroy');
 
 // ---- Inventory ----
 Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
@@ -58,4 +64,10 @@ Route::middleware('role:store_admin,superadmin')->group(function () {
     Route::get('billing', [BillingController::class, 'index'])->name('billing.index');
     Route::post('billing/subscribe', [BillingController::class, 'subscribe'])->name('billing.subscribe');
     Route::get('billing/success', [BillingController::class, 'success'])->name('billing.success');
+});
+
+// ---- Store settings (store admins + superadmin only) ----
+Route::middleware('role:store_admin,superadmin')->group(function () {
+    Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
+    Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
 });

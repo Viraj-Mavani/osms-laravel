@@ -27,9 +27,20 @@
 
             @if (session('status'))
                 <div class="px-4 px-md-5 pt-4 no-print">
-                    <div class="alert alert-success d-flex align-items-center gap-2 mb-0 rounded-3" role="alert">
+                    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-0 rounded-3" role="alert">
                         <i class="bi bi-check-circle-fill"></i>
                         <div>{{ session('status') }}</div>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="px-4 px-md-5 pt-4 no-print">
+                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-0 rounded-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <div>{{ session('error') }}</div>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 </div>
             @endif
@@ -51,6 +62,9 @@
             @include('partials.global-search')
         @endunless
     @endauth
+
+    {{-- Reusable confirm-action modal (premium replacement for window.confirm) --}}
+    @include('partials.confirm-modal')
 
     @stack('scripts')
 </body>

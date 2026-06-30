@@ -43,6 +43,20 @@ class PatientController extends Controller
             ->with('status', 'Patient added.');
     }
 
+    public function edit(Patient $patient): View
+    {
+        return view('tenant.patients.edit', compact('patient'));
+    }
+
+    public function update(StorePatientRequest $request, Patient $patient): RedirectResponse
+    {
+        $patient->update($request->validated());
+
+        return redirect()
+            ->route('tenant.patients.show', $patient)
+            ->with('status', 'Patient updated.');
+    }
+
     public function show(Patient $patient): View
     {
         $patient->load([
