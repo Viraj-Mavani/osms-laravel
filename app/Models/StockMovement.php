@@ -39,6 +39,7 @@ class StockMovement extends Model
         return match ($this->type) {
             'order' => 'Order',
             'cancel' => 'Order cancelled',
+            'edit' => 'Order edited',
             'adjustment' => 'Manual adjustment',
             default => ucfirst((string) $this->type),
         };

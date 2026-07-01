@@ -60,6 +60,8 @@ Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
 Route::get('orders/create', [OrderController::class, 'create'])->name('orders.create');
 Route::post('orders', [OrderController::class, 'store'])->name('orders.store');
 Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+Route::get('orders/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit'); // FG-OrderEdit
+Route::put('orders/{order}', [OrderController::class, 'update'])->name('orders.update');   // FG-OrderEdit
 Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
 Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
 Route::post('orders/{order}/payments', [OrderController::class, 'recordPayment'])->name('orders.payments.store');

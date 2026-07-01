@@ -222,6 +222,171 @@ class OrderController extends Controller
         return view('tenant.orders.show', compact('order', 'tenant'));
     }
 
+    /**
+     * FG-OrderEdit — edit an order's line items. Only a still-open order
+     * (pending / ready_for_pickup) can be edited; a delivered order is a closed
+     * transaction and a cancelled order has already had its stock restored.
+     */
+    public function edit(Order $order): View|RedirectResponse
+    {
+        if (! $this->isEditable($order)) {
+            return redirect()->route('tenant.orders.show', $order)
+                ->with('error', 'Only pending or ready-for-pickup orders can be edited.');
+        }
+
+        $order->load(['patient', 'items.inventory:id,sku,brand,model_name,stock_qty']);
+
+        // Items already on the order — seed the builder. `max_stock` includes the
+        // quantity this order already holds (conceptually returned first), so the
+        // current quantity is always valid even if the item is now low/out of stock.
+        $lineItems = $order->items->map(fn ($it) => [
+            'inventory_id' => $it->inventory_id,
+            'label' => trim(($it->inventory?->brand ?? '—') . ' · ' . ($it->inventory?->model_name ?? '')),
+            'unit_price' => (float) $it->unit_price,
+            'quantity' => (int) $it->quantity,
+            'max_stock' => (int) ($it->inventory?->stock_qty ?? 0) + (int) $it->quantity,
+        ])->values();
+
+        // Searchable inventory to add NEW lines (in-stock only, same as create).
+        $inventory = Inventory::where('stock_qty', '>', 0)
+            ->orderBy('brand')
+            ->get(['id', 'sku', 'barcode', 'brand', 'model_name', 'selling_price', 'stock_qty']);
+
+        // Prescriptions available to (re)attach.
+        $eyeRecords = $order->patient->eyeRecords()->get(['id', 'created_at'])
+            ->map(fn ($r) => ['id' => $r->id, 'label' => 'Rx · ' . $r->created_at->format('d M Y')]);
+
+        return view('tenant.orders.edit', compact('order', 'inventory', 'lineItems', 'eyeRecords'));
+    }
+
+    /**
+     * FG-OrderEdit — reconcile stock + money for an edited order in one atomic
+     * transaction: diff old vs new quantities, re-run the oversell guard on
+     * increases, adjust stock both directions (logging each net change), and
+     * recompute the total. Payments/advance are untouched (owned by
+     * recordPayment); the balance re-derives from the model's saving hook.
+     */
+    public function update(Request $request, Order $order): RedirectResponse
+    {
+        if (! $this->isEditable($order)) {
+            return redirect()->route('tenant.orders.show', $order)
+                ->with('error', 'Only pending or ready-for-pickup orders can be edited.');
+        }
+
+        $validated = $request->validate([
+            'eye_record_id' => ['nullable', 'exists:eye_records,id'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.inventory_id' => ['required', 'exists:inventory,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:10000'],
+        ]);
+
+        // A re-attached prescription must belong to this order's patient (the
+        // exists rule above is unscoped).
+        if (! empty($validated['eye_record_id'])) {
+            EyeRecord::where('patient_id', $order->patient_id)
+                ->findOrFail($validated['eye_record_id']);
+        }
+
+        DB::transaction(function () use ($order, $validated) {
+            // Requested quantity per item (collapse duplicate lines).
+            $wanted = [];
+            foreach ($validated['items'] as $line) {
+                $id = $line['inventory_id'];
+                $wanted[$id] = ($wanted[$id] ?? 0) + (int) $line['quantity'];
+            }
+
+            // Existing quantities + captured prices, keyed by inventory_id.
+            $order->loadMissing('items');
+            $oldQty = [];
+            $oldPrice = [];
+            foreach ($order->items as $it) {
+                $oldQty[$it->inventory_id] = ($oldQty[$it->inventory_id] ?? 0) + (int) $it->quantity;
+                $oldPrice[$it->inventory_id] = (float) $it->unit_price;
+            }
+
+            // Lock every item this edit touches (old ∪ new). Open-order items can
+            // never be archived (C1 guard), so the default scope resolves them all.
+            $ids = array_values(array_unique(array_merge(array_keys($wanted), array_keys($oldQty))));
+            $inventories = Inventory::lockForUpdate()->findMany($ids)->keyBy('id');
+
+            // Oversell guard: the *additional* draw beyond what this order already
+            // holds must fit in current stock. A new item has old qty 0.
+            foreach ($wanted as $id => $qty) {
+                $inv = $inventories->get($id);
+                if (! $inv) {
+                    abort(404); // cross-tenant / unknown / archived new item
+                }
+
+                $additional = $qty - ($oldQty[$id] ?? 0);
+                if ($additional > $inv->stock_qty) {
+                    throw ValidationException::withMessages([
+                        'items' => "Only {$inv->stock_qty} more × {$inv->brand} {$inv->model_name} available (need {$additional} more).",
+                    ]);
+                }
+            }
+
+            // Recompute the total: existing items keep their captured unit_price;
+            // newly-added items price at the item's current selling_price.
+            $total = 0;
+            $lines = [];
+            foreach ($wanted as $id => $qty) {
+                $unit = $oldPrice[$id] ?? (float) $inventories->get($id)->selling_price;
+                $total += $unit * $qty;
+                $lines[] = ['inventory_id' => $id, 'quantity' => $qty, 'unit_price' => $unit];
+            }
+
+            // Can't shrink the order below what has already been paid — there's no
+            // refund flow. The user must reconcile payments first.
+            if ($total < (float) $order->advance_paid) {
+                throw ValidationException::withMessages([
+                    'items' => '₹ ' . number_format($order->advance_paid, 2) . ' has already been paid; '
+                        . 'the new total (₹ ' . number_format($total, 2) . ') cannot be lower. Adjust payments first.',
+                ]);
+            }
+
+            // Apply the net stock change for every touched item + log it.
+            foreach ($ids as $id) {
+                $delta = ($oldQty[$id] ?? 0) - ($wanted[$id] ?? 0); // + restores, − draws down
+                if ($delta === 0) {
+                    continue;
+                }
+
+                $inv = $inventories->get($id);
+                if (! $inv) {
+                    continue; // defensive: removed-line item vanished
+                }
+
+                $delta > 0 ? $inv->increment('stock_qty', $delta) : $inv->decrement('stock_qty', -$delta);
+
+                StockMovement::create([
+                    'inventory_id' => $id,
+                    'delta' => $delta,
+                    'type' => 'edit',
+                    'reason' => 'Order edited',
+                    'order_id' => $order->id,
+                    'recorded_by' => auth()->id(),
+                ]);
+            }
+
+            // Replace the line items and update the order (advance untouched; the
+            // saving hook re-derives balance_due).
+            $order->items()->delete();
+            $order->items()->createMany($lines);
+            $order->update([
+                'eye_record_id' => $validated['eye_record_id'] ?? null,
+                'total_amount' => $total,
+            ]);
+        });
+
+        return redirect()->route('tenant.orders.show', $order)->with('status', 'Order updated.');
+    }
+
+    /** Only still-open orders (pending / ready_for_pickup) may be edited. */
+    private function isEditable(Order $order): bool
+    {
+        return in_array($order->status, ['pending', 'ready_for_pickup'], true);
+    }
+
     /** Advance an order to the next workflow status. */
     public function updateStatus(Request $request, Order $order): RedirectResponse|JsonResponse
     {

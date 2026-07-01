@@ -150,7 +150,7 @@ This tracker spans two QA sessions:
 | NB-017 | Order PDF button is invisible on light bg (`btn-outline-secondary` un-themed) | Low | ✅ Fixed |
 | FG-Delete | No delete/archive for patients / inventory | Medium | ✅ Fixed |
 | FG-Export | No CSV/PDF export for inventory or patients | Low-Med | ✅ Fixed |
-| FG-OrderEdit | Orders are immutable after creation (no line-item / qty editing) | Medium | 🔵 Planned |
+| FG-OrderEdit | Orders are immutable after creation (no line-item / qty editing) | Medium | ✅ Fixed |
 
 ### NB-017: Order PDF button invisible on light background
 - **Status:** ✅ Fixed (2026-07-01) — swapped `btn-outline-secondary` → `btn-light` on the PDF
@@ -203,11 +203,11 @@ This tracker spans two QA sessions:
 - **Fix:** New tenant-owned `payments` table (UUID, amount, method, note, recorded_by). `recordPayment` adds a payment and bumps `advance_paid` (clamped to the outstanding balance; model keeps `balance_due` in sync); blocks cancelled + already-paid orders. The initial advance is now logged as the first payment, so history is a complete ledger. Record-payment modal + history table on the order page. Tested: clamp, balance-to-zero, cancelled block, tenant isolation.
 
 ### FG-OrderEdit: Orders are immutable after creation
-- **Status:** 🔵 Planned
+- **Status:** ✅ Fixed (Phase C3, 2026-07-01).
 - **Priority:** Medium.
-- **Location:** [OrderController](app/Http/Controllers/Tenant/OrderController.php) — no edit/update for line items.
-- **Gap:** Quantities/line items cannot be changed after the order is placed; the only recourse is cancel + re-create.
-- **Planned approach:** Scope-limited edit of line items with full stock reconciliation (re-run the oversell guard, diff old vs new quantities, adjust stock + total) inside a transaction; reuse the Alpine order builder. **Highest-risk item** (touches stock + money) — schedule last, behind robust tests. Blocked orders: cannot edit a `delivered`/`cancelled` order.
+- **Location:** [OrderController@edit/@update](app/Http/Controllers/Tenant/OrderController.php); routes `orders.edit` / `orders.update`; [orders/edit.blade.php](resources/views/tenant/orders/edit.blade.php) (tailored Alpine builder); Edit button on order show.
+- **Gap (resolved):** Quantities/line items could not be changed after placement; the only recourse was cancel + re-create.
+- **Fix:** Scope-limited edit of line items with full **stock + money reconciliation** in one `DB::transaction` (`lockForUpdate` on every touched item). **Only open orders** (pending / ready_for_pickup) are editable — blocked on `edit` (GET) *and* `update` (POST). Reconciliation diffs old vs new quantities per item and applies the net stock change (logging a **`edit`** `StockMovement` for each). **Guards:** the oversell check requires the *additional* draw (`new − old`) to fit current stock; the total can't drop below `advance_paid` (no refund flow); `items` `min:1` (an empty edit is a cancel, not an edit); duplicate lines collapse by `inventory_id`. **Pricing:** existing lines keep their captured `unit_price` (even on qty increase); only newly-added lines price at the current `selling_price` — untouched lines never silently reprice. Payments/advance are untouched (owned by `recordPayment`); `balance_due` re-derives from the model hook. Cross-tenant edit/update → 404. **Tests:** `Phase14OrderEditTest` (14) — status guards, increase/decrease/remove/add, price preservation vs current pricing, oversell boundary, shrink-below-paid block, empty-order block, balance re-sync, tenant isolation. Suite: **149 passed / 590 assertions**.
 
 ### FG-Delete: No delete/archive for patients / inventory
 - **Status:** ✅ Fixed (Phase C1, 2026-07-01).

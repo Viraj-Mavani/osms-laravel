@@ -33,6 +33,11 @@
                             <i class="bi bi-cash-coin me-1"></i> Record payment
                         </button>
                     @endif
+                    @if (in_array($order->status, ['pending', 'ready_for_pickup'], true))
+                        <a href="{{ route('tenant.orders.edit', $order) }}" class="btn btn-light btn-sm">
+                            <i class="bi bi-pencil me-1"></i> Edit
+                        </a>
+                    @endif
                     @if ($order->status !== 'delivered')
                         <button type="button" class="btn btn-light btn-sm text-danger" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
                             <i class="bi bi-x-circle me-1"></i> Cancel
