@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Exports\PatientsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePatientRequest;
 use App\Models\Patient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PatientController extends Controller
 {
@@ -55,6 +58,14 @@ class PatientController extends Controller
         return redirect()
             ->route('tenant.patients.show', $patient)
             ->with('status', 'Patient updated.');
+    }
+
+    /** FG-Export — download the (filtered) patient list as an XLSX file. */
+    public function export(Request $request): BinaryFileResponse
+    {
+        $export = new PatientsExport(trim((string) $request->query('q', '')));
+
+        return Excel::download($export, 'patients-' . now()->format('Ymd-His') . '.xlsx');
     }
 
     /** FG-Delete — archived (soft-deleted) patients, restorable for 30 days. */

@@ -149,7 +149,7 @@ This tracker spans two QA sessions:
 | --- | --- | --- | --- |
 | NB-017 | Order PDF button is invisible on light bg (`btn-outline-secondary` un-themed) | Low | ✅ Fixed |
 | FG-Delete | No delete/archive for patients / inventory | Medium | ✅ Fixed |
-| FG-Export | No CSV/PDF export for inventory or patients | Low-Med | 🔵 Planned |
+| FG-Export | No CSV/PDF export for inventory or patients | Low-Med | ✅ Fixed |
 | FG-OrderEdit | Orders are immutable after creation (no line-item / qty editing) | Medium | 🔵 Planned |
 
 ### NB-017: Order PDF button invisible on light background
@@ -224,11 +224,11 @@ This tracker spans two QA sessions:
 - **Fix:** New tenant-owned `stock_movements` table (UUID, inventory_id, signed `delta`, `type` [order|cancel|adjustment], reason, order_id, recorded_by). `adjustStock` applies a manual delta with a required reason (guards stock ≥ 0); order placement and NB-009 cancel also write movements, so the ledger is complete. Adjust panel + movement-history table on the item page. Tested: adjust, below-zero guard, tenant isolation.
 
 ### FG-Export: No CSV/PDF export for inventory or patients
-- **Status:** 🔵 Planned
+- **Status:** ✅ Fixed (Phase C2, 2026-07-01).
 - **Priority:** Low-Med.
-- **Location:** Only [LedgerExport](app/Exports/LedgerExport.php) exists.
-- **Gap:** Inventory and patient lists can't be exported for offline use/backup.
-- **Planned approach:** `InventoryExport` + `PatientsExport` (Maatwebsite, `FromQuery` + chunking + the BUG-007 `MAX_ROWS` cap) honoring the active filters; export buttons on each index. Tests assert tenant-scoped row counts.
+- **Location:** [InventoryExport](app/Exports/InventoryExport.php) + [PatientsExport](app/Exports/PatientsExport.php); `export` methods on [InventoryController](app/Http/Controllers/Tenant/InventoryController.php) / [PatientController](app/Http/Controllers/Tenant/PatientController.php); routes `inventory.export` / `patients.export`; Export buttons on both index headers.
+- **Gap (resolved):** Inventory and patient lists couldn't be exported for offline use/backup.
+- **Fix:** Two `Maatwebsite\Excel` exports mirroring `LedgerExport` (`FromCollection` + `WithHeadings` + `WithMapping`, `MAX_ROWS = 5000` cap). Each honours the **active index filters** (inventory: search/type/stock; patients: search) and stays tenant-scoped via the global scope; archived (soft-deleted) rows are excluded automatically. Export buttons (`btn-light`) on both index headers carry the current filters through the query string. Downloads are timestamped `.xlsx`. **Tests:** `Phase13ExportTest` (8) — tenant scoping, each filter, archived-exclusion, and `Excel::fake()` download assertions.
 
 ---
 

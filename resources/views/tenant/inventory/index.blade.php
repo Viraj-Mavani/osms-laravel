@@ -13,6 +13,9 @@
             </p>
         </div>
         <div class="d-flex gap-2">
+            <a href="{{ route('tenant.inventory.export', ['q' => $q, 'type' => $type, 'stock' => $stock]) }}" class="btn btn-light">
+                <i class="bi bi-download me-1"></i> Export
+            </a>
             <a href="{{ route('tenant.inventory.trash') }}" class="btn btn-light">
                 <i class="bi bi-archive me-1"></i> Archive
             </a>

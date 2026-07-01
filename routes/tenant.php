@@ -25,6 +25,7 @@ Route::middleware('throttle:120,1')->get('search', SearchController::class)->nam
 Route::get('patients', [PatientController::class, 'index'])->name('patients.index');
 Route::get('patients/create', [PatientController::class, 'create'])->name('patients.create');
 Route::get('patients/trash', [PatientController::class, 'trash'])->name('patients.trash'); // FG-Delete archive
+Route::get('patients/export', [PatientController::class, 'export'])->name('patients.export'); // FG-Export
 Route::post('patients', [PatientController::class, 'store'])->name('patients.store');
 Route::get('patients/{patient}', [PatientController::class, 'show'])->name('patients.show');
 Route::get('patients/{patient}/edit', [PatientController::class, 'edit'])->name('patients.edit');
@@ -45,6 +46,7 @@ Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.
 Route::middleware('throttle:120,1')->get('inventory/scan', [InventoryController::class, 'scan'])->name('inventory.scan');
 Route::get('inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
 Route::get('inventory/trash', [InventoryController::class, 'trash'])->name('inventory.trash'); // FG-Delete archive
+Route::get('inventory/export', [InventoryController::class, 'export'])->name('inventory.export'); // FG-Export
 Route::post('inventory', [InventoryController::class, 'store'])->name('inventory.store');
 Route::get('inventory/{inventory}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
 Route::put('inventory/{inventory}', [InventoryController::class, 'update'])->name('inventory.update');
