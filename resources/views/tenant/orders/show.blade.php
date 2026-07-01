@@ -24,17 +24,39 @@
                 </p>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <span class="badge text-capitalize {{ $order->status === 'delivered' ? 'text-bg-light' : ($order->status === 'ready_for_pickup' ? 'text-bg-primary' : 'text-bg-secondary') }}">
-                    {{ str_replace('_', ' ', $order->status) }}
+                <span class="badge text-capitalize {{ $order->isCancelled() ? 'text-bg-danger' : ($order->status === 'delivered' ? 'text-bg-light' : ($order->status === 'ready_for_pickup' ? 'text-bg-primary' : 'text-bg-secondary')) }}">
+                    {{ $order->status_label }}
                 </span>
+                @unless ($order->isCancelled())
+                    @if ($order->balance_due > 0)
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+                            <i class="bi bi-cash-coin me-1"></i> Record payment
+                        </button>
+                    @endif
+                    @if ($order->status !== 'delivered')
+                        <button type="button" class="btn btn-light btn-sm text-danger" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
+                            <i class="bi bi-x-circle me-1"></i> Cancel
+                        </button>
+                    @endif
+                @endunless
                 <a href="{{ route('tenant.orders.pdf', $order) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
                     <i class="bi bi-file-earmark-pdf me-1"></i> PDF
                 </a>
-                <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()">
                     <i class="bi bi-printer me-1"></i> Print
                 </button>
             </div>
         </div>
+
+        @if ($order->isCancelled())
+            <div class="alert alert-danger d-flex align-items-start gap-2 rounded-3 mt-3 mb-0" role="alert">
+                <i class="bi bi-x-octagon-fill mt-1"></i>
+                <div>
+                    <div class="fw-semibold">Order cancelled{{ $order->cancelled_at ? ' on ' . $order->cancelled_at->format('d M Y') : '' }}</div>
+                    <div class="small">Stock has been restored to inventory.@if ($order->cancel_reason) Reason: {{ $order->cancel_reason }}@endif</div>
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- Receipt --}}
@@ -151,6 +173,139 @@
                 </p>
             </div>
         </div>
+
+        {{-- Payment history (operational, not part of the printed receipt) --}}
+        <div class="card card-lift border-0 shadow-sm rounded-4 mt-4 no-print">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <p class="section-label mb-0">Payment history</p>
+                    @unless ($order->isCancelled())
+                        @if ($order->balance_due > 0)
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+                                <i class="bi bi-plus-lg me-1"></i> Record payment
+                            </button>
+                        @else
+                            <span class="osms-badge osms-badge-green"><span class="osms-badge-dot"></span> Fully paid</span>
+                        @endif
+                    @endunless
+                </div>
+
+                @if ($order->payments->isEmpty())
+                    <p class="text-muted-foreground mb-0" style="font-size:.85rem;">No payments recorded yet.</p>
+                @else
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0" style="font-size:.86rem;">
+                            <thead class="text-muted-foreground text-uppercase" style="font-size:.68rem;letter-spacing:.04em;">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Method</th>
+                                    <th>Note</th>
+                                    <th>By</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($order->payments as $payment)
+                                    <tr>
+                                        <td>{{ $payment->created_at->format('d M Y, g:i A') }}</td>
+                                        <td>{{ $payment->method_label }}</td>
+                                        <td class="text-muted-foreground">{{ $payment->note ?? '—' }}</td>
+                                        <td class="text-muted-foreground">{{ $payment->recorder?->name ?? '—' }}</td>
+                                        <td class="text-end font-monospace">₹ {{ number_format($payment->amount, 2) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr class="border-top">
+                                    <td colspan="4" class="fw-semibold text-end">Total collected</td>
+                                    <td class="text-end font-monospace fw-semibold">₹ {{ number_format($order->advance_paid, 2) }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        </div>
     </div>
 </div>
+
+{{-- Record-payment modal (FG-PaymentLog) --}}
+@unless ($order->isCancelled())
+    @if ($order->balance_due > 0)
+        <div class="modal fade" id="recordPaymentModal" tabindex="-1" aria-labelledby="recordPaymentTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4 border-0" style="box-shadow: var(--shadow-overlay);">
+                    <form method="POST" action="{{ route('tenant.orders.payments.store', $order) }}">
+                        @csrf
+                        <div class="modal-header border-0 pb-0">
+                            <h2 class="h5 fw-semibold font-display mb-0" id="recordPaymentTitle">Record a payment</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4 d-flex flex-column gap-3">
+                            <div class="rounded-3 p-3" style="background: var(--surface-sunken);">
+                                <div class="d-flex justify-content-between" style="font-size:.85rem;">
+                                    <span class="text-muted-foreground">Balance due</span>
+                                    <span class="font-monospace fw-semibold text-danger">₹ {{ number_format($order->balance_due, 2) }}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="pay_amount" class="form-label small fw-medium mb-2">Amount (₹)</label>
+                                <input id="pay_amount" type="number" name="amount" step="0.01" min="0.01"
+                                       max="{{ $order->balance_due }}" value="{{ $order->balance_due }}"
+                                       class="form-control" required>
+                                <div class="form-text" style="font-size:.72rem;">Anything above the balance is automatically capped.</div>
+                            </div>
+                            <div>
+                                <label for="pay_method" class="form-label small fw-medium mb-2">Method</label>
+                                <select id="pay_method" name="method" class="form-select" required>
+                                    <option value="cash">Cash</option>
+                                    <option value="card">Card</option>
+                                    <option value="upi">UPI</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="pay_note" class="form-label small fw-medium mb-2">Note <span class="text-muted-foreground">(optional)</span></label>
+                                <input id="pay_note" type="text" name="note" maxlength="255" class="form-control" placeholder="e.g. Balance on delivery">
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 pt-0">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Record payment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Cancel-order modal (NB-009) --}}
+    @if ($order->status !== 'delivered')
+        <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4 border-0" style="box-shadow: var(--shadow-overlay);">
+                    <form method="POST" action="{{ route('tenant.orders.cancel', $order) }}">
+                        @csrf
+                        <div class="modal-body p-4 text-center">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+                                  style="width:3rem;height:3rem;background:var(--tone-red-bg);color:var(--tone-red);">
+                                <i class="bi bi-x-octagon fs-4"></i>
+                            </span>
+                            <h2 class="h5 fw-semibold font-display mb-2" id="cancelOrderTitle">Cancel this order?</h2>
+                            <p class="text-muted-foreground mb-3">The stock reserved by this order will be returned to inventory. This cannot be undone.</p>
+                            <div class="text-start mb-2">
+                                <label for="cancel_reason" class="form-label small fw-medium mb-2">Reason <span class="text-muted-foreground">(optional)</span></label>
+                                <input id="cancel_reason" type="text" name="cancel_reason" maxlength="255" class="form-control" placeholder="e.g. Customer changed their mind">
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 pt-0 justify-content-center">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Keep order</button>
+                            <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle me-1"></i> Cancel order &amp; restore stock</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
+@endunless
 @endsection

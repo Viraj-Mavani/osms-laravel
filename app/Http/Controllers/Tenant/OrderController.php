@@ -7,6 +7,8 @@ use App\Models\EyeRecord;
 use App\Models\Inventory;
 use App\Models\Order;
 use App\Models\Patient;
+use App\Models\Payment;
+use App\Models\StockMovement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,7 +33,8 @@ class OrderController extends Controller
             'total'       => Order::count(),
             'pending'     => Order::where('status', 'pending')->count(),
             'ready'       => Order::where('status', 'ready_for_pickup')->count(),
-            'outstanding' => (float) Order::where('balance_due', '>', 0)->sum('balance_due'),
+            'outstanding' => (float) Order::where('status', '!=', 'cancelled')
+                                ->where('balance_due', '>', 0)->sum('balance_due'),
         ];
 
         // ---- Kanban: grouped by status (workflow board) ----
@@ -66,9 +69,9 @@ class OrderController extends Controller
                       ->orWhere('phone', 'like', "%{$search}%");
                 });
             })
-            ->when(in_array($status, ['pending', 'ready_for_pickup', 'delivered'], true),
+            ->when(in_array($status, ['pending', 'ready_for_pickup', 'delivered', 'cancelled'], true),
                 fn ($query) => $query->where('status', $status))
-            ->when($payment === 'outstanding', fn ($query) => $query->where('balance_due', '>', 0))
+            ->when($payment === 'outstanding', fn ($query) => $query->where('status', '!=', 'cancelled')->where('balance_due', '>', 0))
             ->when($payment === 'paid', fn ($query) => $query->where('balance_due', '<=', 0))
             ->orderBy($sort, $dir)
             ->paginate(25)
@@ -172,9 +175,31 @@ class OrderController extends Controller
 
             $order->items()->createMany($lines);
 
-            // Draw down stock now that the order is committed.
+            // Draw down stock now that the order is committed, logging each
+            // movement so the item's stock ledger stays complete (FG-StockLog).
             foreach ($wanted as $id => $qty) {
                 $inventories->get($id)->decrement('stock_qty', $qty);
+
+                StockMovement::create([
+                    'inventory_id' => $id,
+                    'delta' => -$qty,
+                    'type' => 'order',
+                    'reason' => 'Order placed',
+                    'order_id' => $order->id,
+                    'recorded_by' => auth()->id(),
+                ]);
+            }
+
+            // Record the initial advance as the first payment (FG-PaymentLog),
+            // so the payment history is a complete ledger from the start.
+            if ($advance > 0) {
+                Payment::create([
+                    'order_id' => $order->id,
+                    'amount' => $advance,
+                    'method' => 'cash',
+                    'note' => 'Initial advance',
+                    'recorded_by' => auth()->id(),
+                ]);
             }
 
             return $order;
@@ -189,6 +214,8 @@ class OrderController extends Controller
             'patient',
             'eyeRecord',
             'items.inventory:id,sku,brand,model_name',
+            'payments' => fn ($q) => $q->latest(),
+            'payments.recorder:id,name',
         ]);
         $tenant = $order->tenant;
 
@@ -209,6 +236,97 @@ class OrderController extends Controller
         }
 
         return back()->with('status', 'Order updated.');
+    }
+
+    /**
+     * NB-009 — cancel an order and return its stock. A delivered or
+     * already-cancelled order can't be cancelled (idempotent + safe).
+     */
+    public function cancel(Request $request, Order $order): RedirectResponse
+    {
+        $validated = $request->validate([
+            'cancel_reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if ($order->isCancelled()) {
+            return back()->with('error', 'This order is already cancelled.');
+        }
+
+        if ($order->status === 'delivered') {
+            return back()->with('error', 'A delivered order cannot be cancelled.');
+        }
+
+        DB::transaction(function () use ($order, $validated) {
+            // Restore each line's stock and log the reversal (FG-StockLog).
+            $order->loadMissing('items');
+
+            foreach ($order->items as $item) {
+                $inv = Inventory::lockForUpdate()->find($item->inventory_id);
+                if (! $inv) {
+                    continue; // item was deleted; nothing to restore
+                }
+
+                $inv->increment('stock_qty', $item->quantity);
+
+                StockMovement::create([
+                    'inventory_id' => $inv->id,
+                    'delta' => $item->quantity,
+                    'type' => 'cancel',
+                    'reason' => 'Order cancelled',
+                    'order_id' => $order->id,
+                    'recorded_by' => auth()->id(),
+                ]);
+            }
+
+            $order->update([
+                'status' => 'cancelled',
+                'cancelled_at' => now(),
+                'cancel_reason' => $validated['cancel_reason'] ?? null,
+            ]);
+        });
+
+        return back()->with('status', 'Order cancelled and stock restored.');
+    }
+
+    /**
+     * FG-PaymentLog — record a payment against the order and advance the
+     * running total (capped at `total_amount`, keeping balance_due ≥ 0).
+     */
+    public function recordPayment(Request $request, Order $order): RedirectResponse
+    {
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+            'method' => ['required', 'in:cash,card,upi,other'],
+            'note' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if ($order->isCancelled()) {
+            return back()->with('error', 'You cannot record a payment on a cancelled order.');
+        }
+
+        if ((float) $order->balance_due <= 0) {
+            return back()->with('error', 'This order is already fully paid.');
+        }
+
+        // Never accept more than what is outstanding.
+        $amount = min((float) $validated['amount'], (float) $order->balance_due);
+
+        DB::transaction(function () use ($order, $validated, $amount) {
+            Payment::create([
+                'order_id' => $order->id,
+                'amount' => $amount,
+                'method' => $validated['method'],
+                'note' => $validated['note'] ?? null,
+                'recorded_by' => auth()->id(),
+            ]);
+
+            // Bump the running advance (model's saving hook re-derives balance_due).
+            $order->update([
+                'advance_paid' => (float) $order->advance_paid + $amount,
+            ]);
+        });
+
+        return back()->with('status', 'Payment of ₹ ' . number_format($amount, 2) . ' recorded.');
     }
 
     /** Printable / downloadable PDF receipt (DomPDF). */

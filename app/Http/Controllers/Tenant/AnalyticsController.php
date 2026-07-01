@@ -81,6 +81,7 @@ class AnalyticsController extends Controller
         // Pending dues — outstanding balances (default 50; "show all" raises the cap but never removes it).
         $showAllDues = $request->boolean('dues_all');
         $dues = Order::with('patient:id,name,phone')
+            ->where('status', '!=', 'cancelled')
             ->where('balance_due', '>', 0)
             ->orderByDesc('balance_due')
             ->limit($showAllDues ? self::MAX_ROWS : 50)

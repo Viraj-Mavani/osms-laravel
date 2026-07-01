@@ -15,12 +15,14 @@ class Order extends Model
     protected $fillable = [
         'tenant_id', 'patient_id', 'eye_record_id', 'status',
         'total_amount', 'advance_paid', 'balance_due',
+        'cancelled_at', 'cancel_reason',
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
         'advance_paid' => 'decimal:2',
         'balance_due' => 'decimal:2',
+        'cancelled_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -46,13 +48,24 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {
             'pending' => 'Pending',
             'ready_for_pickup' => 'Ready for pickup',
             'delivered' => 'Delivered',
+            'cancelled' => 'Cancelled',
             default => ucfirst((string) $this->status),
         };
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelled';
     }
 }

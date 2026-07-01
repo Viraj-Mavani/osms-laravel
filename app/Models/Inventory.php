@@ -31,6 +31,11 @@ class Inventory extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
     public function isLowStock(): bool
     {
         return $this->stock_qty <= $this->min_alert_qty;

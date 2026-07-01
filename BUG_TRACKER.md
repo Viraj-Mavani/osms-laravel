@@ -131,13 +131,15 @@ This tracker spans two QA sessions:
 
 ---
 
-### Phase B — Order lifecycle + payments (🔵 PLANNED)
+### Phase B — Order lifecycle + payments (✅ COMPLETE — 2026-07-01)
 
 | Ref | Gap | Priority | Status |
 | --- | --- | --- | --- |
-| NB-009 | No cancel/void order (+ decremented stock never restored) | High | 🔵 Planned |
-| FG-PaymentLog | No "collect balance" / record-additional-payment action | High | 🔵 Planned |
-| FG-StockLog | No manual stock-adjustment with an audit trail | Medium | 🔵 Planned |
+| NB-009 | No cancel/void order (+ decremented stock never restored) | High | ✅ Fixed |
+| FG-PaymentLog | No "collect balance" / record-additional-payment action | High | ✅ Fixed |
+| FG-StockLog | No manual stock-adjustment with an audit trail | Medium | ✅ Fixed |
+
+**What shipped:** Order **cancel** (restores stock in a transaction, idempotent, blocks delivered) with a reason + cancelled banner; dedicated **`payments`** ledger with a Record-payment modal, over-payment clamp, and full history on the order; dedicated **`stock_movements`** audit trail (order placement, cancel, and manual **Adjust stock** on the item page all write movements) with a history panel. Cancelled orders excluded from outstanding stats/dues. Portable status-enum migration (raw `MODIFY` on MySQL, native `->change()` on SQLite). **Tests:** `Phase11OrderLifecycleTest` (15 tests) — suite **114 passed / 456 assertions**.
 
 ---
 
@@ -171,18 +173,18 @@ This tracker spans two QA sessions:
 - **Fix:** New `Tenant\SettingsController` (`edit`/`update`), `role:store_admin,superadmin` gated; premium card-based settings page with live logo preview + "remove logo" option; logo replace uses the same try/catch safe-upload as onboarding. Sidebar "Settings" link shown to store admins only. Role test confirms staff get 403.
 
 ### NB-009: No cancel/void order (+ stock restore)
-- **Status:** 🔵 Planned
+- **Status:** ✅ Fixed (Phase B, 2026-07-01).
 - **Priority:** High.
-- **Location:** [OrderController](app/Http/Controllers/Tenant/OrderController.php) has only `updateStatus`; orders table status enum is `['pending','ready_for_pickup','delivered']` ([migration](database/migrations/2026_01_01_000006_create_orders_table.php#L16)).
-- **Gap:** A wrong order cannot be cancelled, and the stock drawn down at creation is never returned.
-- **Planned approach:** Add a `cancelled` status (portable migration: raw `MODIFY` on MySQL, no-op on SQLite) + `cancelled_at`/`cancel_reason`; `OrderController@cancel` restores each line's `stock_qty` inside a transaction and writes a stock-movement (see FG-StockLog). A cancelled order is read-only. Tests for stock restoration + idempotency (can't cancel twice).
+- **Location:** [OrderController@cancel](app/Http/Controllers/Tenant/OrderController.php); [migration](database/migrations/2026_07_01_000001_add_cancel_to_orders.php); order show cancel modal + banner.
+- **Gap (resolved):** A wrong order could not be cancelled, and the stock drawn down at creation was never returned.
+- **Fix:** Added a `cancelled` status via a portable migration (raw `MODIFY` on MySQL, native `->change()` on SQLite) plus `cancelled_at`/`cancel_reason`. `cancel()` restores each line's `stock_qty` inside a transaction and writes a `cancel` stock-movement. Blocks delivered + already-cancelled orders (idempotent — no double restore). Cancelled orders show a red banner, are hidden from the kanban board, and are excluded from outstanding stats/dues. Tested: restore, idempotency, delivered-block, tenant isolation.
 
 ### FG-PaymentLog: No "collect balance" / record-payment action
-- **Status:** 🔵 Planned
+- **Status:** ✅ Fixed (Phase B, 2026-07-01).
 - **Priority:** High.
-- **Location:** Order tracks only `advance_paid`/`balance_due`; no payment history.
-- **Gap:** A delivered order with `balance_due > 0` is frozen — there is no way to record the customer paying the rest, and no payment audit trail.
-- **Planned approach:** New tenant-owned `payments` table (UUID, amount, method, note, recorded_by); `OrderController@recordPayment` adds a payment and bumps `advance_paid` (capped at `total_amount`, model keeps `balance_due` in sync); a "Record payment" action + payment history on the order page. Tests: over-payment clamp, balance reaches zero, tenant isolation.
+- **Location:** [payments migration](database/migrations/2026_07_01_000002_create_payments_table.php); [Payment](app/Models/Payment.php); [OrderController@recordPayment](app/Http/Controllers/Tenant/OrderController.php); order show payment modal + history.
+- **Gap (resolved):** A delivered order with `balance_due > 0` was frozen — no way to record the rest being paid, and no audit trail.
+- **Fix:** New tenant-owned `payments` table (UUID, amount, method, note, recorded_by). `recordPayment` adds a payment and bumps `advance_paid` (clamped to the outstanding balance; model keeps `balance_due` in sync); blocks cancelled + already-paid orders. The initial advance is now logged as the first payment, so history is a complete ledger. Record-payment modal + history table on the order page. Tested: clamp, balance-to-zero, cancelled block, tenant isolation.
 
 ### FG-OrderEdit: Orders are immutable after creation
 - **Status:** 🔵 Planned
@@ -199,11 +201,11 @@ This tracker spans two QA sessions:
 - **Planned approach:** Soft-delete (`SoftDeletes`) for patients & inventory with a **30-day retention window**: a confirm modal that informs the user the record is recoverable for 30 days, an **Archive/Trash view** to restore or permanently delete now, and a scheduled command (`patients:purge-trashed`) that hard-deletes records soft-deleted > 30 days. Guard inventory delete when referenced by open orders. Tenant-isolation + restore + purge tests. (Order removal is handled by NB-009 cancel, not hard delete.)
 
 ### FG-StockLog: No manual stock-adjustment audit
-- **Status:** 🔵 Planned
+- **Status:** ✅ Fixed (Phase B, 2026-07-01).
 - **Priority:** Medium.
-- **Location:** Stock changes only via the inventory edit form; no reason/log trail.
-- **Gap:** Damage/loss/recount adjustments are silent — no who/why/when.
-- **Planned approach:** New tenant-owned `stock_movements` table (UUID, inventory_id, delta, reason, type[order|cancel|adjustment], recorded_by); a "Adjust stock" action on the item page; order placement + NB-009 cancel also write movements. A movement history panel. Tests for ledger correctness + isolation.
+- **Location:** [stock_movements migration](database/migrations/2026_07_01_000003_create_stock_movements_table.php); [StockMovement](app/Models/StockMovement.php); [InventoryController@adjustStock](app/Http/Controllers/Tenant/InventoryController.php); inventory edit adjust panel + history.
+- **Gap (resolved):** Damage/loss/recount adjustments were silent — no who/why/when.
+- **Fix:** New tenant-owned `stock_movements` table (UUID, inventory_id, signed `delta`, `type` [order|cancel|adjustment], reason, order_id, recorded_by). `adjustStock` applies a manual delta with a required reason (guards stock ≥ 0); order placement and NB-009 cancel also write movements, so the ledger is complete. Adjust panel + movement-history table on the item page. Tested: adjust, below-zero guard, tenant isolation.
 
 ### FG-Export: No CSV/PDF export for inventory or patients
 - **Status:** 🔵 Planned

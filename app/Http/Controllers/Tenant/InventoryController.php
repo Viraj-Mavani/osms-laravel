@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\InventoryRequest;
 use App\Models\Inventory;
+use App\Models\StockMovement;
 use App\Services\SkuService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class InventoryController extends Controller
@@ -65,7 +67,13 @@ class InventoryController extends Controller
 
     public function edit(Inventory $inventory): View
     {
-        return view('tenant.inventory.edit', ['item' => $inventory]);
+        $movements = $inventory->stockMovements()
+            ->with('recorder:id,name')
+            ->latest()
+            ->limit(20)
+            ->get();
+
+        return view('tenant.inventory.edit', ['item' => $inventory, 'movements' => $movements]);
     }
 
     public function update(InventoryRequest $request, Inventory $inventory): RedirectResponse
@@ -74,6 +82,40 @@ class InventoryController extends Controller
         $inventory->update($request->validated());
 
         return redirect()->route('tenant.inventory.index')->with('status', 'Item updated.');
+    }
+
+    /**
+     * FG-StockLog — apply a manual stock adjustment (damage / loss / recount)
+     * with a reason, and record it in the item's movement ledger. Stock can
+     * never go negative.
+     */
+    public function adjustStock(Request $request, Inventory $inventory): RedirectResponse
+    {
+        $validated = $request->validate([
+            'delta' => ['required', 'integer', 'not_in:0', 'between:-100000,100000'],
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        $delta = (int) $validated['delta'];
+
+        if ($inventory->stock_qty + $delta < 0) {
+            return back()->with('error', "Adjustment would drop stock below zero (current: {$inventory->stock_qty}).");
+        }
+
+        DB::transaction(function () use ($inventory, $delta, $validated) {
+            $inventory->increment('stock_qty', $delta);
+
+            StockMovement::create([
+                'inventory_id' => $inventory->id,
+                'delta' => $delta,
+                'type' => 'adjustment',
+                'reason' => $validated['reason'],
+                'recorded_by' => auth()->id(),
+            ]);
+        });
+
+        return redirect()->route('tenant.inventory.edit', $inventory)
+            ->with('status', 'Stock adjusted and logged.');
     }
 
     /**

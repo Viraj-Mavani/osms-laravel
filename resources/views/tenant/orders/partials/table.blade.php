@@ -25,6 +25,7 @@
         <option value="pending"          @selected($status==='pending')>In lab</option>
         <option value="ready_for_pickup" @selected($status==='ready_for_pickup')>Ready for pickup</option>
         <option value="delivered"        @selected($status==='delivered')>Delivered</option>
+        <option value="cancelled"        @selected($status==='cancelled')>Cancelled</option>
     </select>
     <select name="payment" class="form-select w-auto" onchange="document.getElementById('orderFilters').submit()">
         <option value="">Any payment</option>

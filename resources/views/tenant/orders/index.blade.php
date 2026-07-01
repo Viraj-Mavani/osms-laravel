@@ -4,9 +4,10 @@
 @php
     // Status presentation: dot colour + badge classes + human label.
     $statusMeta = [
-        'pending'          => ['label' => 'In lab',  'badge' => 'osms-badge-amber',   'dot' => '#b45309'],
-        'ready_for_pickup' => ['label' => 'Ready',   'badge' => 'osms-badge-blue',    'dot' => '#004f75'],
+        'pending'          => ['label' => 'In lab',   'badge' => 'osms-badge-amber',   'dot' => '#b45309'],
+        'ready_for_pickup' => ['label' => 'Ready',    'badge' => 'osms-badge-blue',    'dot' => '#004f75'],
         'delivered'        => ['label' => 'Delivered','badge' => 'osms-badge-green',   'dot' => '#15803d'],
+        'cancelled'        => ['label' => 'Cancelled','badge' => 'osms-badge-red',     'dot' => '#b91c1c'],
     ];
 
 @endphp

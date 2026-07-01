@@ -16,5 +16,78 @@
             @include('tenant.inventory._form', ['mode' => 'edit', 'item' => $item])
         </div>
     </div>
+
+    {{-- Stock adjustment (FG-StockLog) --}}
+    <div class="card card-lift border-0 shadow-sm rounded-4 mt-4">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <p class="section-label mb-0">Adjust stock</p>
+                <span class="text-muted-foreground" style="font-size:.8rem;">
+                    Current: <span class="fw-semibold font-monospace">{{ $item->stock_qty }}</span>
+                </span>
+            </div>
+            <p class="text-muted-foreground mb-3" style="font-size:.82rem;">
+                Record damage, loss, or a physical recount. Every change is logged below with a reason.
+            </p>
+
+            <form method="POST" action="{{ route('tenant.inventory.adjust', $item) }}" class="row g-2 align-items-end">
+                @csrf
+                <div class="col-6 col-sm-3">
+                    <label for="delta" class="form-label small fw-medium mb-2">Change (±)</label>
+                    <input id="delta" type="number" name="delta" step="1" value="{{ old('delta') }}"
+                           class="form-control @error('delta') is-invalid @enderror" placeholder="-1 or 5" required>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <label for="reason" class="form-label small fw-medium mb-2">Reason</label>
+                    <input id="reason" type="text" name="reason" value="{{ old('reason') }}" maxlength="255"
+                           class="form-control @error('reason') is-invalid @enderror" placeholder="e.g. Damaged in transit" required>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <button type="submit" class="btn btn-secondary w-100">
+                        <i class="bi bi-sliders me-1"></i> Apply
+                    </button>
+                </div>
+                @error('delta')<div class="col-12"><div class="text-danger small">{{ $message }}</div></div>@enderror
+                @error('reason')<div class="col-12"><div class="text-danger small">{{ $message }}</div></div>@enderror
+            </form>
+        </div>
+    </div>
+
+    {{-- Movement history --}}
+    <div class="card card-lift border-0 shadow-sm rounded-4 mt-4">
+        <div class="card-body p-4">
+            <p class="section-label mb-3">Stock movement history</p>
+            @if ($movements->isEmpty())
+                <p class="text-muted-foreground mb-0" style="font-size:.85rem;">No stock movements recorded yet.</p>
+            @else
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0" style="font-size:.86rem;">
+                        <thead class="text-muted-foreground text-uppercase" style="font-size:.68rem;letter-spacing:.04em;">
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Reason</th>
+                                <th>By</th>
+                                <th class="text-end">Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($movements as $m)
+                                <tr>
+                                    <td>{{ $m->created_at->format('d M Y, g:i A') }}</td>
+                                    <td>{{ $m->type_label }}</td>
+                                    <td class="text-muted-foreground">{{ $m->reason ?? '—' }}</td>
+                                    <td class="text-muted-foreground">{{ $m->recorder?->name ?? '—' }}</td>
+                                    <td class="text-end font-monospace fw-semibold {{ $m->delta < 0 ? 'text-danger' : 'text-success' }}">
+                                        {{ $m->delta > 0 ? '+' : '' }}{{ $m->delta }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    </div>
 </div>
 @endsection
