@@ -33,6 +33,25 @@
             <a href="{{ safe_route('tenant.orders.create', ['patient' => $patient->id]) }}" class="btn btn-primary">
                 <i class="bi bi-cart-plus me-1"></i> New order
             </a>
+            <div class="dropdown">
+                <button class="btn btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions">
+                    <i class="bi bi-three-dots"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow rounded-3 border-0" style="box-shadow: var(--shadow-overlay);">
+                    <li>
+                        <form method="POST" action="{{ route('tenant.patients.destroy', $patient) }}" class="m-0">
+                            @csrf
+                            @method('DELETE')
+                            <button type="button" class="dropdown-item d-flex align-items-center gap-2 text-danger"
+                                    data-confirm="Archive {{ $patient->name }}? The record is recoverable from the archive for 30 days."
+                                    data-confirm-title="Archive patient"
+                                    data-confirm-label="Archive">
+                                <i class="bi bi-archive"></i> Archive patient
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 

@@ -57,6 +57,53 @@ class PatientController extends Controller
             ->with('status', 'Patient updated.');
     }
 
+    /** FG-Delete — archived (soft-deleted) patients, restorable for 30 days. */
+    public function trash(): View
+    {
+        $patients = Patient::onlyTrashed()
+            ->latest('deleted_at')
+            ->paginate(50);
+
+        return view('tenant.patients.trash', compact('patients'));
+    }
+
+    /**
+     * FG-Delete — archive a patient (soft delete). Blocked while the patient has
+     * order history, so a receipt can never be orphaned; archive junk/test rows.
+     */
+    public function destroy(Patient $patient): RedirectResponse
+    {
+        if ($patient->orders()->exists()) {
+            return back()->with('error', 'This patient has order history and cannot be archived.');
+        }
+
+        $patient->delete();
+
+        return redirect()
+            ->route('tenant.patients.index')
+            ->with('status', 'Patient archived. You can restore it within 30 days.');
+    }
+
+    /** FG-Delete — restore an archived patient. */
+    public function restore(Patient $patient): RedirectResponse
+    {
+        $patient->restore();
+
+        return redirect()
+            ->route('tenant.patients.show', $patient)
+            ->with('status', 'Patient restored.');
+    }
+
+    /** FG-Delete — permanently delete an archived patient (irreversible). */
+    public function forceDelete(Patient $patient): RedirectResponse
+    {
+        $patient->forceDelete();
+
+        return redirect()
+            ->route('tenant.patients.trash')
+            ->with('status', 'Patient permanently deleted.');
+    }
+
     public function show(Patient $patient): View
     {
         $patient->load([

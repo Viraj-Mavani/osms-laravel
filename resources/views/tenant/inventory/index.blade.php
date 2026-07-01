@@ -12,9 +12,14 @@
                 Frames, lenses, and accessories — scan a barcode anywhere to find an item.
             </p>
         </div>
-        <a href="{{ route('tenant.inventory.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Add item
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('tenant.inventory.trash') }}" class="btn btn-light">
+                <i class="bi bi-archive me-1"></i> Archive
+            </a>
+            <a href="{{ route('tenant.inventory.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Add item
+            </a>
+        </div>
     </div>
 
     @if (request('scan'))

@@ -6,10 +6,11 @@ use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Patient extends Model
 {
-    use HasUuid, BelongsToTenant;
+    use HasUuid, BelongsToTenant, SoftDeletes;
 
     protected $fillable = [
         'tenant_id',

@@ -1,0 +1,83 @@
+@extends('layouts.app')
+@section('title', 'Archived patients')
+
+@section('content')
+<div class="p-4 p-md-5">
+    <a href="{{ route('tenant.patients.index') }}"
+       class="d-inline-flex align-items-center gap-1 text-muted-foreground text-decoration-none mb-3" style="font-size:.8rem;">
+        <i class="bi bi-chevron-left"></i> Back to patients
+    </a>
+
+    {{-- Header --}}
+    <div class="d-flex flex-column flex-md-row gap-3 align-items-md-end justify-content-between mb-4">
+        <div>
+            <p class="section-label mb-1">Patients</p>
+            <h1 class="h3 fw-semibold font-display mb-1">Archive</h1>
+            <p class="text-muted-foreground mb-0" style="font-size:.9rem;">
+                Archived patients are recoverable for 30 days, then permanently removed.
+            </p>
+        </div>
+    </div>
+
+    @if ($patients->isNotEmpty())
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="text-muted-foreground" style="font-size:.78rem;">
+                        <tr>
+                            <th class="ps-4">Name</th>
+                            <th>Phone</th>
+                            <th>Archived</th>
+                            <th class="pe-4 text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($patients as $p)
+                            <tr>
+                                <td class="ps-4 fw-medium">{{ $p->name }}</td>
+                                <td>{{ $p->phone }}</td>
+                                <td class="text-muted-foreground" style="font-size:.82rem;">
+                                    {{ $p->deleted_at->format('d M Y') }}
+                                    <span class="text-faint">· purges {{ $p->deleted_at->copy()->addDays(30)->format('d M Y') }}</span>
+                                </td>
+                                <td class="pe-4">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <form method="POST" action="{{ route('tenant.patients.restore', $p) }}" class="m-0">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="btn btn-sm btn-light">
+                                                <i class="bi bi-arrow-counterclockwise me-1"></i> Restore
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ route('tenant.patients.force-delete', $p) }}" class="m-0">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button" class="btn btn-sm btn-light text-danger"
+                                                    data-confirm="Permanently delete {{ $p->name }}? This cannot be undone."
+                                                    data-confirm-title="Delete permanently"
+                                                    data-confirm-label="Delete forever">
+                                                <i class="bi bi-trash me-1"></i> Delete now
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if ($patients->hasPages())
+            <div class="mt-3">{{ $patients->links() }}</div>
+        @endif
+    @else
+        <div class="glass card-lift rounded-4 text-center p-5">
+            <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary mb-3"
+                  style="width:3rem;height:3rem;"><i class="bi bi-archive fs-4"></i></span>
+            <h2 class="h5 fw-semibold font-display">Archive is empty</h2>
+            <p class="text-muted-foreground mb-0">Archived patients will appear here for 30 days before being purged.</p>
+        </div>
+    @endif
+</div>
+@endsection

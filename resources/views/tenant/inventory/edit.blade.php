@@ -7,9 +7,32 @@
        class="d-inline-flex align-items-center gap-1 text-muted-foreground text-decoration-none mb-3" style="font-size:.8rem;">
         <i class="bi bi-chevron-left"></i> Back to inventory
     </a>
-    <p class="section-label mb-1">Edit item</p>
-    <h1 class="h3 fw-semibold font-display mb-1">{{ $item->brand }} {{ $item->model_name }}</h1>
-    <p class="text-muted-foreground mb-4 font-monospace" style="font-size:.82rem;">{{ $item->sku }}</p>
+    <div class="d-flex align-items-start justify-content-between gap-3">
+        <div>
+            <p class="section-label mb-1">Edit item</p>
+            <h1 class="h3 fw-semibold font-display mb-1">{{ $item->brand }} {{ $item->model_name }}</h1>
+            <p class="text-muted-foreground mb-4 font-monospace" style="font-size:.82rem;">{{ $item->sku }}</p>
+        </div>
+        <div class="dropdown">
+            <button class="btn btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions">
+                <i class="bi bi-three-dots"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow rounded-3 border-0" style="box-shadow: var(--shadow-overlay);">
+                <li>
+                    <form method="POST" action="{{ route('tenant.inventory.destroy', $item) }}" class="m-0">
+                        @csrf
+                        @method('DELETE')
+                        <button type="button" class="dropdown-item d-flex align-items-center gap-2 text-danger"
+                                data-confirm="Archive {{ $item->brand }} {{ $item->model_name }}? The item is recoverable from the archive for 30 days."
+                                data-confirm-title="Archive item"
+                                data-confirm-label="Archive">
+                            <i class="bi bi-archive"></i> Archive item
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
 
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-4">

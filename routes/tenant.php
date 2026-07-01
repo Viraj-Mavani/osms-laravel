@@ -24,10 +24,14 @@ Route::middleware('throttle:120,1')->get('search', SearchController::class)->nam
 // ---- Patients ----
 Route::get('patients', [PatientController::class, 'index'])->name('patients.index');
 Route::get('patients/create', [PatientController::class, 'create'])->name('patients.create');
+Route::get('patients/trash', [PatientController::class, 'trash'])->name('patients.trash'); // FG-Delete archive
 Route::post('patients', [PatientController::class, 'store'])->name('patients.store');
 Route::get('patients/{patient}', [PatientController::class, 'show'])->name('patients.show');
 Route::get('patients/{patient}/edit', [PatientController::class, 'edit'])->name('patients.edit');
 Route::put('patients/{patient}', [PatientController::class, 'update'])->name('patients.update');
+Route::delete('patients/{patient}', [PatientController::class, 'destroy'])->name('patients.destroy');
+Route::patch('patients/{patient}/restore', [PatientController::class, 'restore'])->name('patients.restore')->withTrashed();
+Route::delete('patients/{patient}/force', [PatientController::class, 'forceDelete'])->name('patients.force-delete')->withTrashed();
 
 // ---- Eye records (nested under a patient) ----
 Route::get('patients/{patient}/records/create', [EyeRecordController::class, 'create'])->name('eye-records.create');
@@ -40,10 +44,14 @@ Route::delete('records/{record}', [EyeRecordController::class, 'destroy'])->name
 Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
 Route::middleware('throttle:120,1')->get('inventory/scan', [InventoryController::class, 'scan'])->name('inventory.scan');
 Route::get('inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
+Route::get('inventory/trash', [InventoryController::class, 'trash'])->name('inventory.trash'); // FG-Delete archive
 Route::post('inventory', [InventoryController::class, 'store'])->name('inventory.store');
 Route::get('inventory/{inventory}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
 Route::put('inventory/{inventory}', [InventoryController::class, 'update'])->name('inventory.update');
 Route::post('inventory/{inventory}/adjust', [InventoryController::class, 'adjustStock'])->name('inventory.adjust');
+Route::delete('inventory/{inventory}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+Route::patch('inventory/{inventory}/restore', [InventoryController::class, 'restore'])->name('inventory.restore')->withTrashed();
+Route::delete('inventory/{inventory}/force', [InventoryController::class, 'forceDelete'])->name('inventory.force-delete')->withTrashed();
 
 // ---- Orders ----
 Route::get('orders', [OrderController::class, 'index'])->name('orders.index');

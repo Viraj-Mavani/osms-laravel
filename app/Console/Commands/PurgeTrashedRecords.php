@@ -1,0 +1,39 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Inventory;
+use App\Models\Patient;
+use Illuminate\Console\Command;
+
+/**
+ * FG-Delete — hard-delete patients and inventory that have been archived
+ * (soft-deleted) beyond the 30-day retention window. Runs daily via the
+ * scheduler (see routes/console.php). Queries bypass the tenant scope so the
+ * purge covers every store; the retention window is the only filter.
+ */
+class PurgeTrashedRecords extends Command
+{
+    protected $signature = 'model:purge-trashed {--days=30 : Retention window in days}';
+
+    protected $description = 'Permanently delete patients/inventory archived beyond the retention window';
+
+    public function handle(): int
+    {
+        $days = (int) $this->option('days');
+        $cutoff = now()->subDays($days);
+
+        $purged = 0;
+
+        foreach ([Patient::class, Inventory::class] as $model) {
+            $purged += $model::withoutGlobalScopes()
+                ->onlyTrashed()
+                ->where('deleted_at', '<=', $cutoff)
+                ->forceDelete();
+        }
+
+        $this->info("Purged {$purged} record(s) archived before {$cutoff->toDateString()}.");
+
+        return self::SUCCESS;
+    }
+}

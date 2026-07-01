@@ -118,6 +118,59 @@ class InventoryController extends Controller
             ->with('status', 'Stock adjusted and logged.');
     }
 
+    /** FG-Delete — archived (soft-deleted) items, restorable for 30 days. */
+    public function trash(): View
+    {
+        $items = Inventory::onlyTrashed()
+            ->latest('deleted_at')
+            ->paginate(50);
+
+        return view('tenant.inventory.trash', compact('items'));
+    }
+
+    /**
+     * FG-Delete — archive an item (soft delete). Blocked while referenced by an
+     * open order (pending / ready_for_pickup), since that stock is still
+     * committed. Delivered/cancelled history is safe — those line items carry
+     * their own captured unit_price.
+     */
+    public function destroy(Inventory $inventory): RedirectResponse
+    {
+        $openReference = $inventory->orderItems()
+            ->whereHas('order', fn ($q) => $q->whereIn('status', ['pending', 'ready_for_pickup']))
+            ->exists();
+
+        if ($openReference) {
+            return back()->with('error', 'This item is on an open order and cannot be archived until those orders are delivered or cancelled.');
+        }
+
+        $inventory->delete();
+
+        return redirect()
+            ->route('tenant.inventory.index')
+            ->with('status', 'Item archived. You can restore it within 30 days.');
+    }
+
+    /** FG-Delete — restore an archived item. */
+    public function restore(Inventory $inventory): RedirectResponse
+    {
+        $inventory->restore();
+
+        return redirect()
+            ->route('tenant.inventory.edit', $inventory)
+            ->with('status', 'Item restored.');
+    }
+
+    /** FG-Delete — permanently delete an archived item (irreversible). */
+    public function forceDelete(Inventory $inventory): RedirectResponse
+    {
+        $inventory->forceDelete();
+
+        return redirect()
+            ->route('tenant.inventory.trash')
+            ->with('status', 'Item permanently deleted.');
+    }
+
     /**
      * AJAX barcode/SKU lookup (replaces the Supabase client query in BarcodeScanModal).
      */

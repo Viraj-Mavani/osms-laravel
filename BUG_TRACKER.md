@@ -148,9 +148,9 @@ This tracker spans two QA sessions:
 | Ref | Gap | Priority | Status |
 | --- | --- | --- | --- |
 | NB-017 | Order PDF button is invisible on light bg (`btn-outline-secondary` un-themed) | Low | ✅ Fixed |
-| FG-OrderEdit | Orders are immutable after creation (no line-item / qty editing) | Medium | 🔵 Planned |
-| FG-Delete | No delete/archive for patients / inventory | Medium | 🔵 Planned |
+| FG-Delete | No delete/archive for patients / inventory | Medium | ✅ Fixed |
 | FG-Export | No CSV/PDF export for inventory or patients | Low-Med | 🔵 Planned |
+| FG-OrderEdit | Orders are immutable after creation (no line-item / qty editing) | Medium | 🔵 Planned |
 
 ### NB-017: Order PDF button invisible on light background
 - **Status:** ✅ Fixed (2026-07-01) — swapped `btn-outline-secondary` → `btn-light` on the PDF
@@ -210,11 +210,11 @@ This tracker spans two QA sessions:
 - **Planned approach:** Scope-limited edit of line items with full stock reconciliation (re-run the oversell guard, diff old vs new quantities, adjust stock + total) inside a transaction; reuse the Alpine order builder. **Highest-risk item** (touches stock + money) — schedule last, behind robust tests. Blocked orders: cannot edit a `delivered`/`cancelled` order.
 
 ### FG-Delete: No delete/archive for patients / inventory
-- **Status:** 🔵 Planned
+- **Status:** ✅ Fixed (Phase C1, 2026-07-01).
 - **Priority:** Medium.
-- **Location:** No `destroy` routes for patients or inventory.
-- **Gap:** Test/junk rows (e.g. an old "abc-invalid-phone" patient) cannot be removed; mis-added items linger.
-- **Planned approach:** Soft-delete (`SoftDeletes`) for patients & inventory with a **30-day retention window**: a confirm modal that informs the user the record is recoverable for 30 days, an **Archive/Trash view** to restore or permanently delete now, and a scheduled command (`patients:purge-trashed`) that hard-deletes records soft-deleted > 30 days. Guard inventory delete when referenced by open orders. Tenant-isolation + restore + purge tests. (Order removal is handled by NB-009 cancel, not hard delete.)
+- **Location:** [PatientController](app/Http/Controllers/Tenant/PatientController.php) + [InventoryController](app/Http/Controllers/Tenant/InventoryController.php) `trash`/`destroy`/`restore`/`forceDelete`; [purge command](app/Console/Commands/PurgeTrashedRecords.php); migrations `2026_07_01_000004/000005`; archive views `patients/trash`, `inventory/trash`.
+- **Gap (resolved):** Test/junk rows (e.g. an old "abc-invalid-phone" patient) could not be removed; mis-added items lingered.
+- **Fix:** `SoftDeletes` on `Patient` + `Inventory` (composes with `TenantScope`) with a **30-day retention window**. Archive via the reusable confirm modal ("recoverable for 30 days"); a per-module **Archive view** (Restore / Delete-now); restore/force-delete routes use `->withTrashed()` binding (still tenant-scoped → cross-tenant returns 404). **Guards:** a patient with order history can't be archived (no orphaned receipts); an item on an **open** order (pending/ready) can't be archived (delivered/cancelled history is safe — line items keep their captured `unit_price`). Nightly `model:purge-trashed` (scheduled 02:00, `--days=30`) hard-deletes past the window, bypassing the tenant scope to cover every store. **Tests:** `Phase12SoftDeleteTest` (12 tests) — soft-delete/restore/force, both guards, purge window, tenant isolation, archive views render.
 
 ### FG-StockLog: No manual stock-adjustment audit
 - **Status:** ✅ Fixed (Phase B, 2026-07-01).

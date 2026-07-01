@@ -12,9 +12,14 @@
                 Manage patient profiles, eye records, and order history.
             </p>
         </div>
-        <a href="{{ route('tenant.patients.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> New patient
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('tenant.patients.trash') }}" class="btn btn-light">
+                <i class="bi bi-archive me-1"></i> Archive
+            </a>
+            <a href="{{ route('tenant.patients.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> New patient
+            </a>
+        </div>
     </div>
 
     {{-- Search --}}
