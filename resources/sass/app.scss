@@ -464,7 +464,16 @@ body {
 .search-result-item:hover { background: var(--osms-primary-soft); }
 
 // ============================================================
-// 18. PRINT  (thermal receipt + A4)
+// 18. MODALS (z-index layering fix for Bootstrap backdrop)
+// ============================================================
+// Ensure modal content appears above the backdrop overlay. Bootstrap's
+// default stacking context can be disrupted in certain DOM positions,
+// causing the backdrop to appear on top and block form interactions.
+.modal { z-index: 1070 !important; }
+.modal-backdrop { z-index: 1060 !important; }
+
+// ============================================================
+// 19. PRINT  (thermal receipt + A4)
 // ============================================================
 @media print {
   .app-sidebar, .no-print, .btn { display: none !important; }
