@@ -147,9 +147,25 @@ This tracker spans two QA sessions:
 
 | Ref | Gap | Priority | Status |
 | --- | --- | --- | --- |
+| NB-017 | Order PDF button is invisible on light bg (`btn-outline-secondary` un-themed) | Low | ✅ Fixed |
 | FG-OrderEdit | Orders are immutable after creation (no line-item / qty editing) | Medium | 🔵 Planned |
 | FG-Delete | No delete/archive for patients / inventory | Medium | 🔵 Planned |
 | FG-Export | No CSV/PDF export for inventory or patients | Low-Med | 🔵 Planned |
+
+### NB-017: Order PDF button invisible on light background
+- **Status:** ✅ Fixed (2026-07-01) — swapped `btn-outline-secondary` → `btn-light` on the PDF
+  buttons in [orders/show.blade.php:42](resources/views/tenant/orders/show.blade.php#L42) and
+  [orders/partials/table.blade.php:105](resources/views/tenant/orders/partials/table.blade.php#L105).
+- **Severity:** Low (UI/legibility).
+- **Description:** `.btn-outline-secondary` is not themed in the OSMS layer, so it falls back to
+  Bootstrap's default derived from `$secondary` (`#eef1f5`, near-white) — giving light-gray text +
+  border on a white card, effectively invisible. The design system's neutral buttons
+  (`.btn-secondary` / `.btn-light`) are properly themed (white surface, metallic border, `--osms-fg`
+  text). This button was missed when the other buttons were standardised.
+- **Recommended fix:** Use `.btn-light` (or `.btn-secondary`) for neutral actions; never
+  `.btn-outline-secondary` (un-themed). *(Note: analytics export + order-builder qty steppers +
+  "Clear filters" still use `btn-outline-secondary` — same latent issue, out of scope here, candidates
+  for a later sweep.)*
 
 ### NB-008: No edit/update for a Patient profile
 - **Status:** ✅ Fixed (Phase A, 2026-06-30).

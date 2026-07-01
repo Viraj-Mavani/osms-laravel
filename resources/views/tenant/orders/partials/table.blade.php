@@ -102,7 +102,7 @@
                                         </button>
                                     @endif
                                     <a href="{{ route('tenant.orders.pdf', $order) }}" target="_blank"
-                                       class="btn btn-sm btn-outline-secondary" title="PDF receipt">
+                                       class="btn btn-sm btn-light" title="PDF receipt">
                                         <i class="bi bi-file-earmark-pdf"></i>
                                     </a>
                                 </div>

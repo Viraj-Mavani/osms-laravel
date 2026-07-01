@@ -39,7 +39,7 @@
                         </button>
                     @endif
                 @endunless
-                <a href="{{ route('tenant.orders.pdf', $order) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ route('tenant.orders.pdf', $order) }}" target="_blank" class="btn btn-light btn-sm">
                     <i class="bi bi-file-earmark-pdf me-1"></i> PDF
                 </a>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()">
