@@ -470,7 +470,6 @@ body {
 .search-result-item:hover { background: var(--osms-primary-soft); }
 
 // ============================================================
-<<<<<<< HEAD
 // 18. MODALS (premium backdrop tint)
 // ============================================================
 // A slightly softer, cooler scrim than Bootstrap's flat black to match the
@@ -478,15 +477,6 @@ body {
 // retains a transform (see the fade-up note above), so the backdrop sits behind
 // the modal as intended — no z-index or pointer-events overrides needed.
 .modal-backdrop { background-color: rgba(16, 24, 40, 0.5); }
-=======
-// 18. MODALS (z-index layering fix for Bootstrap backdrop)
-// ============================================================
-// Ensure modal content appears above the backdrop overlay. Bootstrap's
-// default stacking context can be disrupted in certain DOM positions,
-// causing the backdrop to appear on top and block form interactions.
-.modal { z-index: 1070 !important; }
-.modal-backdrop { z-index: 1060 !important; }
->>>>>>> 2feddd47fd0c048d26cad2ac563463e81d3e36fa
 
 // ============================================================
 // 19. PRINT  (thermal receipt + A4)
