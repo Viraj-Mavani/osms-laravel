@@ -65,7 +65,7 @@ order money-model. Pricing semantics (Task 3.1) is folded into the order money-m
 - **Tests:** front-end render is manual (canvas/SVG); `Phase15BarcodeLabelTest` (3) asserts the edit
   page exposes the barcode panel + Download/Print controls and the SKU/barcode data, the label↔scan
   round-trip resolves, and the page is tenant-isolated. Suite: **152 passed / 601 assertions**.
-- **Commit:** _(this change)_.
+- **Commit:** `ccb3902`.
 
 ---
 
