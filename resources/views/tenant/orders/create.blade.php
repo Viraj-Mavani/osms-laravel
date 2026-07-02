@@ -19,6 +19,9 @@
     <form method="POST" action="{{ route('tenant.orders.store') }}" @submit="validateForm($event)">
         @csrf
         <input type="hidden" name="customer_id" :value="customerId">
+        <input type="hidden" name="customer_name" :value="newMode ? newName.trim() : ''">
+        <input type="hidden" name="customer_phone" :value="newMode ? newPhone : ''">
+        <input type="hidden" name="customer_country_code" :value="newCode">
         <input type="hidden" name="eye_record_id" :value="eyeRecordId">
         <input type="hidden" name="advance_paid" :value="advancePaid">
         <template x-for="(it, idx) in items" :key="it.inventory_id">
@@ -35,7 +38,9 @@
                 <div class="card border-0 shadow-sm rounded-4">
                     <div class="card-body p-4">
                         <h2 class="section-label mb-3">Customer</h2>
-                        <div x-show="!customerId" class="position-relative">
+
+                        {{-- Search existing (nothing chosen, not adding) --}}
+                        <div x-show="!customerId && !newMode" class="position-relative">
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><i class="bi bi-search text-muted-foreground"></i></span>
                                 <input type="text" class="form-control" placeholder="Search customer by name or phone…"
@@ -51,8 +56,41 @@
                                     </button>
                                 </template>
                             </div>
+                            {{-- Add-new affordance --}}
+                            <div x-show="customerSearch.trim().length > 0" class="mt-2">
+                                <button type="button" class="btn btn-sm btn-light" @click="startNew()">
+                                    <i class="bi bi-person-plus me-1"></i> Add “<span x-text="customerSearch.trim()"></span>” as a new customer
+                                </button>
+                            </div>
                         </div>
 
+                        {{-- Inline new-customer form --}}
+                        <div x-show="newMode" class="rounded-3 p-3" style="background: var(--surface-sunken);">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="fw-medium small">New customer</span>
+                                <button type="button" class="btn btn-sm btn-link text-muted-foreground p-0 text-decoration-none" @click="cancelNew()">Cancel</button>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <label class="form-label small fw-medium mb-1">Full name</label>
+                                    <input type="text" class="form-control" x-model="newName" placeholder="Rahul Kumar">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-medium mb-1">Phone</label>
+                                    <div class="input-group">
+                                        <select class="form-select flex-grow-0 w-auto" x-model="newCode" aria-label="Country code">
+                                            <template x-for="code in codes" :key="code"><option :value="code" x-text="code"></option></template>
+                                        </select>
+                                        <input type="tel" class="form-control" x-model="newPhone" placeholder="98765 43210">
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-muted-foreground mb-0 mt-2" style="font-size:.72rem;">
+                                Saved automatically when you create the order. An existing phone links to that customer.
+                            </p>
+                        </div>
+
+                        {{-- Chosen existing customer --}}
                         <div x-show="customerId" class="d-flex align-items-center justify-content-between">
                             <div>
                                 <p class="mb-0 fw-medium" x-text="selectedCustomer?.name"></p>
@@ -61,7 +99,7 @@
                             <button type="button" class="btn btn-sm btn-light" @click="clearCustomer()">Change</button>
                         </div>
 
-                        {{-- Eye record select --}}
+                        {{-- Eye record select (existing customer with prescriptions) --}}
                         <div x-show="customerId && eyeRecords.length" class="mt-3">
                             <label class="form-label small fw-medium mb-1">Attach prescription (optional)</label>
                             <select class="form-select" x-model="eyeRecordId">
@@ -182,7 +220,9 @@
         return {
             customers: @json($customers),
             inventory: @json($inventory),
+            codes: ['+91', '+1', '+44', '+971', '+61', '+65', '+880', '+977'],
             customerId: '', selectedCustomer: null, customerSearch: '',
+            newMode: false, newName: '', newPhone: '', newCode: '+91',
             eyeRecords: [], eyeRecordId: '',
             items: [], itemSearch: '', scanFlash: null,
             advancePaid: '0',
@@ -206,10 +246,13 @@
             },
             selectCustomer(c) {
                 this.customerId = c.id; this.selectedCustomer = c; this.customerSearch = '';
+                this.newMode = false; this.newName = ''; this.newPhone = '';
                 fetch(`{{ url('tenant/customers') }}/${c.id}/eye-records`, {headers:{'Accept':'application/json'}})
                     .then(r => r.json()).then(d => { this.eyeRecords = d; this.eyeRecordId = d[0]?.id || ''; });
             },
             clearCustomer() { this.customerId=''; this.selectedCustomer=null; this.eyeRecords=[]; this.eyeRecordId=''; },
+            startNew() { this.newName = this.customerSearch.trim(); this.customerSearch = ''; this.newMode = true; },
+            cancelNew() { this.newMode = false; this.newName = ''; this.newPhone = ''; },
             addItem(inv, qty=1) {
                 const ex = this.items.find(i => i.inventory_id === inv.id);
                 if (ex) { ex.quantity = Math.min(ex.max_stock, ex.quantity + qty); return; }
@@ -230,7 +273,8 @@
             total() { return this.items.reduce((s,i)=> s + i.unit_price*i.quantity, 0); },
             itemCount() { return this.items.reduce((s,i)=> s + i.quantity, 0); },
             balance() { return Math.max(this.total() - (Number(this.advancePaid)||0), 0); },
-            canSubmit() { return this.customerId && this.items.length > 0; },
+            hasCustomer() { return this.customerId !== '' || (this.newMode && this.newName.trim() !== '' && this.newPhone.trim() !== ''); },
+            canSubmit() { return this.hasCustomer() && this.items.length > 0; },
             validateForm(e) {
                 if (!this.canSubmit()) { e.preventDefault(); return false; }
                 if ((Number(this.advancePaid)||0) > this.total()) {

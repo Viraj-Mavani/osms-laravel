@@ -103,26 +103,47 @@ class OrderController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Inline walk-in add: normalise the new-customer phone (code + national)
+        // to the stored "{code} {national}" shape before validation.
+        if (! $request->filled('customer_id') && $request->filled('customer_phone')) {
+            $code = trim((string) ($request->input('customer_country_code') ?: '+91'));
+            $national = preg_replace('/\D/', '', (string) $request->input('customer_phone'));
+            $request->merge(['customer_phone' => $national !== '' ? $code . ' ' . $national : '']);
+        }
+
         $validated = $request->validate([
-            'customer_id' => ['required', 'exists:customers,id'],
+            // Either pick an existing customer, or supply a new name + phone inline.
+            'customer_id'    => ['nullable', 'required_without:customer_name', 'exists:customers,id'],
+            'customer_name'  => ['nullable', 'required_without:customer_id', 'string', 'max:255'],
+            'customer_phone' => ['nullable', 'required_with:customer_name', 'string', 'max:30', 'regex:/^\+\d{1,4}\s\d{7,15}$/'],
             'eye_record_id' => ['nullable', 'exists:eye_records,id'],
             'advance_paid' => ['nullable', 'numeric', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.inventory_id' => ['required', 'exists:inventory,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:10000'],
+        ], [
+            'customer_phone.regex' => 'Enter a valid phone number (7–15 digits).',
         ]);
 
-        // Ensure the customer belongs to this tenant (global scope enforces it).
-        Customer::findOrFail($validated['customer_id']);
-
-        // If a prescription is attached, it must belong to this tenant *and* this
-        // customer — the `exists` rule above is unscoped, so re-check it here.
-        if (! empty($validated['eye_record_id'])) {
-            EyeRecord::where('customer_id', $validated['customer_id'])
-                ->findOrFail($validated['eye_record_id']);
-        }
-
         $order = DB::transaction(function () use ($validated) {
+            // Resolve the customer: an existing one (tenant-checked → 404 if not) or
+            // find-or-create by phone for an inline walk-in add. An existing phone
+            // reuses that customer (never overwrites the name); the unique
+            // (tenant_id, phone) index backstops against duplicates.
+            $customer = ! empty($validated['customer_id'])
+                ? Customer::findOrFail($validated['customer_id'])
+                : Customer::firstOrCreate(
+                    ['tenant_id' => auth()->user()->tenant_id, 'phone' => $validated['customer_phone']],
+                    ['name' => $validated['customer_name']],
+                );
+
+            // A prescription, if attached, must belong to this customer (the exists
+            // rule above is unscoped, so re-check it here).
+            if (! empty($validated['eye_record_id'])) {
+                EyeRecord::where('customer_id', $customer->id)
+                    ->findOrFail($validated['eye_record_id']);
+            }
+
             // Total quantity requested per item (collapses duplicate lines so the
             // stock guard can't be bypassed by splitting one item across two rows).
             $wanted = [];
@@ -166,7 +187,7 @@ class OrderController extends Controller
             $advance = min((float) ($validated['advance_paid'] ?? 0), $total);
 
             $order = Order::create([
-                'customer_id' => $validated['customer_id'],
+                'customer_id' => $customer->id,
                 'eye_record_id' => $validated['eye_record_id'] ?? null,
                 'status' => 'pending',
                 'total_amount' => $total,
