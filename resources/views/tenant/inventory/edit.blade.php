@@ -40,6 +40,31 @@
         </div>
     </div>
 
+    {{-- Barcode label (FT-Barcode) — Code128 for shelf/item tagging --}}
+    <div class="card card-lift border-0 shadow-sm rounded-4 mt-4">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <p class="section-label mb-0">Barcode label</p>
+                <div class="d-flex gap-2">
+                    <button type="button" id="barcodeDownload" class="btn btn-light btn-sm">
+                        <i class="bi bi-download me-1"></i> Download
+                    </button>
+                    <button type="button" id="barcodePrint" class="btn btn-light btn-sm">
+                        <i class="bi bi-printer me-1"></i> Print
+                    </button>
+                </div>
+            </div>
+            <p class="text-muted-foreground mb-3" style="font-size:.82rem;">
+                A Code128 label for shelf / item tagging. Saves and prints as
+                <span class="font-monospace">{{ $item->sku }}</span>.
+            </p>
+            <div id="barcodeLabel" class="d-inline-flex flex-column align-items-center border rounded-3 p-3 bg-white">
+                <div class="fw-medium mb-1" style="font-size:.8rem;">{{ trim(($item->brand ?? '') . ' ' . $item->model_name) }}</div>
+                <svg id="barcodeSvg" aria-label="Barcode for {{ $item->sku }}"></svg>
+            </div>
+        </div>
+    </div>
+
     {{-- Stock adjustment (FG-StockLog) --}}
     <div class="card card-lift border-0 shadow-sm rounded-4 mt-4">
         <div class="card-body p-4">
@@ -113,4 +138,59 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    // FT-Barcode — render the item's barcode as Code128 (client-side JsBarcode) and
+    // wire Download (PNG named by SKU) + Print. Guarded like the other deferred-ESM
+    // consumers (BUG-001 / NB-002): wait for DOMContentLoaded, bail if the global
+    // isn't present yet.
+    (function () {
+        function init() {
+            if (! window.JsBarcode) return;
+
+            const value = @json($item->barcode);
+            const sku = @json($item->sku);
+            const svg = document.getElementById('barcodeSvg');
+            if (! svg) return;
+
+            const opts = { format: 'CODE128', displayValue: true, text: sku, fontSize: 14, height: 50, margin: 8 };
+            JsBarcode(svg, value, opts);
+
+            // Sanitise the SKU for a safe download/print filename.
+            const fileName = (sku || 'barcode').replace(/[^\w.-]+/g, '_');
+
+            document.getElementById('barcodeDownload')?.addEventListener('click', () => {
+                const canvas = document.createElement('canvas');
+                JsBarcode(canvas, value, opts);
+                const a = document.createElement('a');
+                a.href = canvas.toDataURL('image/png');
+                a.download = fileName + '.png';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            });
+
+            document.getElementById('barcodePrint')?.addEventListener('click', () => {
+                const label = document.getElementById('barcodeLabel');
+                const w = window.open('', '_blank', 'width=420,height=320');
+                if (! w) return;
+                w.document.write(
+                    '<html><head><title>' + fileName + '</title>' +
+                    '<style>body{font-family:sans-serif;text-align:center;margin:16px;}</style>' +
+                    '</head><body>' + label.innerHTML +
+                    '<scr' + 'ipt>window.onload=function(){window.print();window.close();}</scr' + 'ipt>' +
+                    '</body></html>'
+                );
+                w.document.close();
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+</script>
+@endpush
 @endsection
