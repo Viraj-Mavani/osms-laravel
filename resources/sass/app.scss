@@ -169,6 +169,11 @@ $enable-negative-margins:  true;
 // ============================================================
 // 6. BASE
 // ============================================================
+// Alpine.js loads as a deferred ES module, so x-show/x-if blocks would flash
+// visible before it boots. x-cloak keeps them hidden until Alpine strips the
+// attribute on init (prevents the order builder's picker states overlapping).
+[x-cloak] { display: none !important; }
+
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

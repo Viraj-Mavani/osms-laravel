@@ -40,7 +40,7 @@
                         <h2 class="section-label mb-3">Customer</h2>
 
                         {{-- Search existing (nothing chosen, not adding) --}}
-                        <div x-show="!customerId && !newMode" class="position-relative">
+                        <div x-cloak x-show="!customerId && !newMode" class="position-relative">
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><i class="bi bi-search text-muted-foreground"></i></span>
                                 <input type="text" class="form-control" placeholder="Search customer by name or phone…"
@@ -65,7 +65,7 @@
                         </div>
 
                         {{-- Inline new-customer form --}}
-                        <div x-show="newMode" class="rounded-3 p-3" style="background: var(--surface-sunken);">
+                        <div x-cloak x-show="newMode" class="rounded-3 p-3" style="background: var(--surface-sunken);">
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <span class="fw-medium small">New customer</span>
                                 <button type="button" class="btn btn-sm btn-link text-muted-foreground p-0 text-decoration-none" @click="cancelNew()">Cancel</button>
@@ -91,7 +91,7 @@
                         </div>
 
                         {{-- Chosen existing customer --}}
-                        <div x-show="customerId" class="d-flex align-items-center justify-content-between">
+                        <div x-cloak x-show="customerId" class="d-flex align-items-center justify-content-between">
                             <div>
                                 <p class="mb-0 fw-medium" x-text="selectedCustomer?.name"></p>
                                 <p class="mb-0 text-muted-foreground small" x-text="selectedCustomer?.phone"></p>
@@ -100,7 +100,7 @@
                         </div>
 
                         {{-- Eye record select (existing customer with prescriptions) --}}
-                        <div x-show="customerId && eyeRecords.length" class="mt-3">
+                        <div x-cloak x-show="customerId && eyeRecords.length" class="mt-3">
                             <label class="form-label small fw-medium mb-1">Attach prescription (optional)</label>
                             <select class="form-select" x-model="eyeRecordId">
                                 <option value="">No prescription</option>
