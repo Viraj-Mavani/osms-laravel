@@ -25,17 +25,27 @@
         </div>
     </div>
 
-    {{-- Search --}}
-    <form method="GET" action="{{ route('tenant.customers.index') }}" class="mb-4" style="max-width:28rem;">
-        <div class="input-group">
-            <span class="input-group-text bg-white"><i class="bi bi-search text-muted-foreground"></i></span>
-            <input type="search" name="q" value="{{ $search }}" class="form-control"
-                   placeholder="Search by name or phone…" autocomplete="off">
-            @if ($search)
-                <a href="{{ route('tenant.customers.index') }}" class="btn btn-secondary">Clear</a>
-            @endif
+    {{-- Search + role filter --}}
+    <div class="d-flex flex-column flex-sm-row gap-3 align-items-sm-center justify-content-between mb-4">
+        <form method="GET" action="{{ route('tenant.customers.index') }}" style="max-width:28rem;flex:1;">
+            @if ($filter)<input type="hidden" name="filter" value="{{ $filter }}">@endif
+            <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-search text-muted-foreground"></i></span>
+                <input type="search" name="q" value="{{ $search }}" class="form-control"
+                       placeholder="Search by name or phone…" autocomplete="off">
+                @if ($search)
+                    <a href="{{ route('tenant.customers.index', ['filter' => $filter ?: null]) }}" class="btn btn-secondary">Clear</a>
+                @endif
+            </div>
+        </form>
+
+        <div class="btn-group" role="group" aria-label="Filter by role">
+            <a href="{{ route('tenant.customers.index', ['q' => $search ?: null]) }}"
+               class="btn btn-sm {{ $filter === '' ? 'btn-primary' : 'btn-light' }}">All</a>
+            <a href="{{ route('tenant.customers.index', ['q' => $search ?: null, 'filter' => 'patients']) }}"
+               class="btn btn-sm {{ $filter === 'patients' ? 'btn-primary' : 'btn-light' }}">Patients</a>
         </div>
-    </form>
+    </div>
 
     @if ($customers->isNotEmpty())
         <div class="card border-0 shadow-sm rounded-4">
@@ -54,7 +64,14 @@
                         @foreach ($customers as $c)
                             <tr class="search-result-item" role="button"
                                 onclick="window.location='{{ route('tenant.customers.show', $c) }}'">
-                                <td class="ps-4 fw-medium">{{ $c->name }}</td>
+                                <td class="ps-4 fw-medium">
+                                    {{ $c->name }}
+                                    @if ($c->eye_records_count > 0)
+                                        <span class="osms-badge osms-badge-blue ms-1" title="Has a prescription on file">
+                                            <span class="osms-badge-dot"></span> Patient
+                                        </span>
+                                    @endif
+                                </td>
                                 <td>{{ $c->phone }}</td>
                                 <td>{{ $c->age ?? '—' }}</td>
                                 <td class="text-capitalize">{{ $c->gender ?? '—' }}</td>
@@ -72,16 +89,21 @@
             <div class="mt-3">{{ $customers->links() }}</div>
         @endif
     @else
+        @php $isPatientFilter = $filter === 'patients'; @endphp
         <div class="glass card-lift rounded-4 text-center p-5">
             <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary mb-3"
                   style="width:3rem;height:3rem;"><i class="bi bi-people fs-4"></i></span>
             <h2 class="h5 fw-semibold font-display">
-                {{ $search ? 'No customers match your search' : 'No customers yet' }}
+                {{ $search ? 'No customers match your search' : ($isPatientFilter ? 'No patients yet' : 'No customers yet') }}
             </h2>
             <p class="text-muted-foreground mb-3">
-                {{ $search ? 'Try a different name or phone number.' : 'Add your first customer to start tracking prescriptions and orders.' }}
+                {{ $search
+                    ? 'Try a different name or phone number.'
+                    : ($isPatientFilter
+                        ? 'Customers with a prescription on file appear here. Add an eye record to a customer to make them a patient.'
+                        : 'Add your first customer to start tracking prescriptions and orders.') }}
             </p>
-            @unless ($search)
+            @unless ($search || $isPatientFilter)
                 <a href="{{ route('tenant.customers.create') }}" class="btn btn-primary">
                     <i class="bi bi-plus-lg me-1"></i> Add your first customer
                 </a>

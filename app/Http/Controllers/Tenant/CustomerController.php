@@ -17,19 +17,23 @@ class CustomerController extends Controller
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('q', ''));
+        // "patients" = the derived role: customers who have at least one eye record.
+        $filter = $request->query('filter') === 'patients' ? 'patients' : '';
 
         $customers = Customer::query()
+            ->withCount('eyeRecords') // powers the "Patient" badge without an N+1
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                       ->orWhere('phone', 'like', "%{$search}%");
                 });
             })
+            ->when($filter === 'patients', fn ($query) => $query->patients())
             ->latest()
             ->paginate(50)
             ->withQueryString();
 
-        return view('tenant.customers.index', compact('customers', 'search'));
+        return view('tenant.customers.index', compact('customers', 'search', 'filter'));
     }
 
     public function create(): View
