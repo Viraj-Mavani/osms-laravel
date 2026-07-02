@@ -41,7 +41,7 @@ order money-model. Pricing semantics (Task 3.1) is folded into the order money-m
 | # | Ref | Feature | Depends on | Priority | Status |
 | --- | --- | --- | --- | --- | --- |
 | 1 | FT-Barcode | Printable / downloadable barcode label on Edit item (Task 3.2) | — | Low | ✅ Done |
-| 2 | FT-Customers | Unified customer entity + inline auto-register in orders (Task 1) | — | High | 🔵 Planned |
+| 2 | FT-Customers | Unified customer entity + inline auto-register in orders (Task 1) | — | High | ✅ Done |
 | 3 | FT-OrderMoney | Order discount + custom price + advance payment method + builder redesign (Task 2, incl. 3.1 pricing semantics) | FT-Customers | High | 🔵 Planned |
 
 ---
@@ -71,8 +71,32 @@ order money-model. Pricing semantics (Task 3.1) is folded into the order money-m
 
 ## FT-Customers — Unified customer entity + inline auto-register (Task 1)
 
-- **Status:** 🟡 Planned — spec locked 2026-07-01, ready to build.
+- **Status:** ✅ Done (2026-07-01) — shipped in 4 steps (C-a…C-d).
 - **Priority:** High (foundational — highest churn, lowest math risk).
+
+### Shipped
+- **C-a (`482e9fb`)** — foundation rename `patient` → `customer` across schema (portable, reversible
+  migration: `Schema::rename` + `renameColumn`, FKs preserved), models, controllers, routes, views,
+  exports, request, seeder, tests. "Patient" kept as clinical/marketing wording. Dev DB migrated
+  (data preserved).
+- **C-b (`9548195`)** — inline auto-register in the order builder: `store` accepts `customer_id` OR
+  new `customer_name`+`customer_phone` and find-or-creates by `(tenant_id, phone)` (existing phone
+  reuses, never renames; unique index backstops). Alpine "Add '<typed>' as a new customer".
+- **UI fix (`f8eed04`)** — `x-cloak` on the picker states to stop Alpine FOUC (stray "Change" button).
+- **C-c (`eb102be`)** — "Patient" as a derived role: `filter=patients` (scopePatients),
+  `withCount('eyeRecords')`, All/Patients segmented filter + blue "Patient" badge.
+- **C-d** — route smoke test: `Phase1SmokeTest::test_all_tenant_get_routes_respond_without_error`
+  GETs every tenant route (with seeded bindings) asserting < 500 — the net for missed `route()` refs.
+
+### Tests
+`Phase16CustomerInlineTest` (7), `Phase17CustomersFilterTest` (4), route smoke sweep, plus the full
+renamed suite. **164 passed / 662 assertions.**
+
+### ⚠️ Deploy note (Hostinger / MySQL)
+The rename migration was verified on SQLite only (no local MySQL). **Before deploying: back up the
+production DB**, then `php artisan migrate` (+ `php artisan optimize:clear` for route/view cache). The
+migration renames the `patients` table and the `orders`/`eye_records` FK columns via Laravel's portable
+grammar; existing rows are preserved.
 
 ### Guiding principle
 A **rename of the contact entity** (`patient` → `customer`), **not** a blanket find-replace. "Patient"
