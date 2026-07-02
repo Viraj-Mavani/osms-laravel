@@ -12,7 +12,7 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        $tenants = Tenant::withCount(['users', 'patients', 'orders'])
+        $tenants = Tenant::withCount(['users', 'customers', 'orders'])
             ->with('subscription')
             ->latest()
             ->get();

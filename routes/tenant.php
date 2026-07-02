@@ -12,8 +12,8 @@ use App\Http\Controllers\Tenant\AnalyticsController;
 use App\Http\Controllers\Tenant\BillingController;
 use App\Http\Controllers\Tenant\EyeRecordController;
 use App\Http\Controllers\Tenant\InventoryController;
+use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\OrderController;
-use App\Http\Controllers\Tenant\PatientController;
 use App\Http\Controllers\Tenant\SearchController;
 use App\Http\Controllers\Tenant\SettingsController;
 use Illuminate\Support\Facades\Route;
@@ -21,22 +21,22 @@ use Illuminate\Support\Facades\Route;
 // ---- Global search (Cmd+K) ----
 Route::middleware('throttle:120,1')->get('search', SearchController::class)->name('search');
 
-// ---- Patients ----
-Route::get('patients', [PatientController::class, 'index'])->name('patients.index');
-Route::get('patients/create', [PatientController::class, 'create'])->name('patients.create');
-Route::get('patients/trash', [PatientController::class, 'trash'])->name('patients.trash'); // FG-Delete archive
-Route::get('patients/export', [PatientController::class, 'export'])->name('patients.export'); // FG-Export
-Route::post('patients', [PatientController::class, 'store'])->name('patients.store');
-Route::get('patients/{patient}', [PatientController::class, 'show'])->name('patients.show');
-Route::get('patients/{patient}/edit', [PatientController::class, 'edit'])->name('patients.edit');
-Route::put('patients/{patient}', [PatientController::class, 'update'])->name('patients.update');
-Route::delete('patients/{patient}', [PatientController::class, 'destroy'])->name('patients.destroy');
-Route::patch('patients/{patient}/restore', [PatientController::class, 'restore'])->name('patients.restore')->withTrashed();
-Route::delete('patients/{patient}/force', [PatientController::class, 'forceDelete'])->name('patients.force-delete')->withTrashed();
+// ---- Customers ----
+Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
+Route::get('customers/trash', [CustomerController::class, 'trash'])->name('customers.trash'); // FG-Delete archive
+Route::get('customers/export', [CustomerController::class, 'export'])->name('customers.export'); // FG-Export
+Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
+Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
+Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+Route::patch('customers/{customer}/restore', [CustomerController::class, 'restore'])->name('customers.restore')->withTrashed();
+Route::delete('customers/{customer}/force', [CustomerController::class, 'forceDelete'])->name('customers.force-delete')->withTrashed();
 
-// ---- Eye records (nested under a patient) ----
-Route::get('patients/{patient}/records/create', [EyeRecordController::class, 'create'])->name('eye-records.create');
-Route::post('patients/{patient}/records', [EyeRecordController::class, 'store'])->name('eye-records.store');
+// ---- Eye records (nested under a customer) ----
+Route::get('customers/{customer}/records/create', [EyeRecordController::class, 'create'])->name('eye-records.create');
+Route::post('customers/{customer}/records', [EyeRecordController::class, 'store'])->name('eye-records.store');
 Route::get('records/{record}/edit', [EyeRecordController::class, 'edit'])->name('eye-records.edit');
 Route::put('records/{record}', [EyeRecordController::class, 'update'])->name('eye-records.update');
 Route::delete('records/{record}', [EyeRecordController::class, 'destroy'])->name('eye-records.destroy');
@@ -66,7 +66,7 @@ Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])-
 Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
 Route::post('orders/{order}/payments', [OrderController::class, 'recordPayment'])->name('orders.payments.store');
 Route::get('orders/{order}/pdf', [OrderController::class, 'pdf'])->name('orders.pdf');
-Route::middleware('throttle:120,1')->get('patients/{patient}/eye-records', [OrderController::class, 'eyeRecords'])->name('patients.eye-records');
+Route::middleware('throttle:120,1')->get('customers/{customer}/eye-records', [OrderController::class, 'eyeRecords'])->name('customers.eye-records');
 
 // ---- Analytics (store admins + superadmin only) ----
 Route::middleware('role:store_admin,superadmin')->group(function () {

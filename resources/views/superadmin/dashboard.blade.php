@@ -33,7 +33,7 @@
                         <th>Plan</th>
                         <th>Status</th>
                         <th class="text-end">Users</th>
-                        <th class="text-end">Patients</th>
+                        <th class="text-end">Customers</th>
                         <th class="text-end pe-4">Orders</th>
                     </tr>
                 </thead>
@@ -52,7 +52,7 @@
                                 </span>
                             </td>
                             <td class="text-end">{{ $t->users_count }}</td>
-                            <td class="text-end">{{ $t->patients_count }}</td>
+                            <td class="text-end">{{ $t->customers_count }}</td>
                             <td class="text-end pe-4">{{ $t->orders_count }}</td>
                         </tr>
                     @empty

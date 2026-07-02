@@ -4,36 +4,36 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreEyeRecordRequest;
+use App\Models\Customer;
 use App\Models\EyeRecord;
-use App\Models\Patient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class EyeRecordController extends Controller
 {
-    public function create(Patient $patient): View
+    public function create(Customer $customer): View
     {
-        return view('tenant.eye-records.create', compact('patient'));
+        return view('tenant.eye-records.create', compact('customer'));
     }
 
-    public function store(StoreEyeRecordRequest $request, Patient $patient): RedirectResponse
+    public function store(StoreEyeRecordRequest $request, Customer $customer): RedirectResponse
     {
         $data = $request->validated();
-        $data['patient_id'] = $patient->id;
+        $data['customer_id'] = $customer->id;
         $data['recorded_by'] = $request->user()->id;
 
         EyeRecord::create($data);
 
         return redirect()
-            ->route('tenant.patients.show', $patient)
+            ->route('tenant.customers.show', $customer)
             ->with('status', 'Eye record saved.');
     }
 
     public function edit(EyeRecord $record): View
     {
-        $patient = $record->patient;
+        $customer = $record->customer;
 
-        return view('tenant.eye-records.edit', compact('patient', 'record'));
+        return view('tenant.eye-records.edit', compact('customer', 'record'));
     }
 
     public function update(StoreEyeRecordRequest $request, EyeRecord $record): RedirectResponse
@@ -41,17 +41,17 @@ class EyeRecordController extends Controller
         $record->update($request->validated());
 
         return redirect()
-            ->route('tenant.patients.show', $record->patient)
+            ->route('tenant.customers.show', $record->customer)
             ->with('status', 'Eye record updated.');
     }
 
     public function destroy(EyeRecord $record): RedirectResponse
     {
-        $patient = $record->patient;
+        $customer = $record->customer;
         $record->delete();
 
         return redirect()
-            ->route('tenant.patients.show', $patient)
+            ->route('tenant.customers.show', $customer)
             ->with('status', 'Eye record deleted.');
     }
 }

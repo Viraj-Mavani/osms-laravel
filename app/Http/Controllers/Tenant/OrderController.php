@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\EyeRecord;
 use App\Models\Inventory;
 use App\Models\Order;
-use App\Models\Patient;
+use App\Models\Customer;
 use App\Models\Payment;
 use App\Models\StockMovement;
 use Illuminate\Http\JsonResponse;
@@ -39,7 +39,7 @@ class OrderController extends Controller
 
         // ---- Kanban: grouped by status (workflow board) ----
         if ($view === 'kanban') {
-            $orders = Order::with('patient:id,name,phone')
+            $orders = Order::with('customer:id,name,phone')
                 ->withCount('items')
                 ->latest()
                 ->get()
@@ -61,11 +61,11 @@ class OrderController extends Controller
         $sort = in_array($request->query('sort'), $sortable, true) ? $request->query('sort') : 'created_at';
         $dir  = $request->query('dir') === 'asc' ? 'asc' : 'desc';
 
-        $orders = Order::with('patient:id,name,phone')
+        $orders = Order::with('customer:id,name,phone')
             ->withCount('items')
             ->when($search !== '', function ($query) use ($search) {
-                $query->whereHas('patient', function ($p) use ($search) {
-                    $p->where('name', 'like', "%{$search}%")
+                $query->whereHas('customer', function ($c) use ($search) {
+                    $c->where('name', 'like', "%{$search}%")
                       ->orWhere('phone', 'like', "%{$search}%");
                 });
             })
@@ -91,20 +91,20 @@ class OrderController extends Controller
 
     public function create(Request $request): View
     {
-        $patients = Patient::orderBy('name')->get(['id', 'name', 'phone']);
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'phone']);
         $inventory = Inventory::where('stock_qty', '>', 0)
             ->orderBy('brand')
             ->get(['id', 'sku', 'barcode', 'brand', 'model_name', 'selling_price', 'stock_qty']);
 
-        $selectedPatientId = $request->query('patient');
+        $selectedCustomerId = $request->query('customer');
 
-        return view('tenant.orders.create', compact('patients', 'inventory', 'selectedPatientId'));
+        return view('tenant.orders.create', compact('customers', 'inventory', 'selectedCustomerId'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'patient_id' => ['required', 'exists:patients,id'],
+            'customer_id' => ['required', 'exists:customers,id'],
             'eye_record_id' => ['nullable', 'exists:eye_records,id'],
             'advance_paid' => ['nullable', 'numeric', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
@@ -112,13 +112,13 @@ class OrderController extends Controller
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:10000'],
         ]);
 
-        // Ensure the patient belongs to this tenant (global scope enforces it).
-        Patient::findOrFail($validated['patient_id']);
+        // Ensure the customer belongs to this tenant (global scope enforces it).
+        Customer::findOrFail($validated['customer_id']);
 
         // If a prescription is attached, it must belong to this tenant *and* this
-        // patient — the `exists` rule above is unscoped, so re-check it here.
+        // customer — the `exists` rule above is unscoped, so re-check it here.
         if (! empty($validated['eye_record_id'])) {
-            EyeRecord::where('patient_id', $validated['patient_id'])
+            EyeRecord::where('customer_id', $validated['customer_id'])
                 ->findOrFail($validated['eye_record_id']);
         }
 
@@ -166,7 +166,7 @@ class OrderController extends Controller
             $advance = min((float) ($validated['advance_paid'] ?? 0), $total);
 
             $order = Order::create([
-                'patient_id' => $validated['patient_id'],
+                'customer_id' => $validated['customer_id'],
                 'eye_record_id' => $validated['eye_record_id'] ?? null,
                 'status' => 'pending',
                 'total_amount' => $total,
@@ -211,7 +211,7 @@ class OrderController extends Controller
     public function show(Order $order): View
     {
         $order->load([
-            'patient',
+            'customer',
             'eyeRecord',
             'items.inventory:id,sku,brand,model_name',
             'payments' => fn ($q) => $q->latest(),
@@ -234,7 +234,7 @@ class OrderController extends Controller
                 ->with('error', 'Only pending or ready-for-pickup orders can be edited.');
         }
 
-        $order->load(['patient', 'items.inventory:id,sku,brand,model_name,stock_qty']);
+        $order->load(['customer', 'items.inventory:id,sku,brand,model_name,stock_qty']);
 
         // Items already on the order — seed the builder. `max_stock` includes the
         // quantity this order already holds (conceptually returned first), so the
@@ -253,7 +253,7 @@ class OrderController extends Controller
             ->get(['id', 'sku', 'barcode', 'brand', 'model_name', 'selling_price', 'stock_qty']);
 
         // Prescriptions available to (re)attach.
-        $eyeRecords = $order->patient->eyeRecords()->get(['id', 'created_at'])
+        $eyeRecords = $order->customer->eyeRecords()->get(['id', 'created_at'])
             ->map(fn ($r) => ['id' => $r->id, 'label' => 'Rx · ' . $r->created_at->format('d M Y')]);
 
         return view('tenant.orders.edit', compact('order', 'inventory', 'lineItems', 'eyeRecords'));
@@ -280,10 +280,10 @@ class OrderController extends Controller
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:10000'],
         ]);
 
-        // A re-attached prescription must belong to this order's patient (the
+        // A re-attached prescription must belong to this order's customer (the
         // exists rule above is unscoped).
         if (! empty($validated['eye_record_id'])) {
-            EyeRecord::where('patient_id', $order->patient_id)
+            EyeRecord::where('customer_id', $order->customer_id)
                 ->findOrFail($validated['eye_record_id']);
         }
 
@@ -497,7 +497,7 @@ class OrderController extends Controller
     /** Printable / downloadable PDF receipt (DomPDF). */
     public function pdf(Order $order)
     {
-        $order->load(['patient', 'eyeRecord', 'items.inventory:id,sku,brand,model_name']);
+        $order->load(['customer', 'eyeRecord', 'items.inventory:id,sku,brand,model_name']);
         $tenant = $order->tenant;
 
         $pdf = Pdf::loadView('tenant.orders.receipt-pdf', compact('order', 'tenant'))
@@ -506,10 +506,10 @@ class OrderController extends Controller
         return $pdf->stream('receipt-' . substr($order->id, 0, 8) . '.pdf');
     }
 
-    /** JSON list of a patient's eye records for the order builder. */
-    public function eyeRecords(Patient $patient): JsonResponse
+    /** JSON list of a customer's eye records for the order builder. */
+    public function eyeRecords(Customer $customer): JsonResponse
     {
-        $records = $patient->eyeRecords()->get(['id', 'created_at'])
+        $records = $customer->eyeRecords()->get(['id', 'created_at'])
             ->map(fn ($r) => [
                 'id' => $r->id,
                 'label' => 'Rx · ' . $r->created_at->format('d M Y'),

@@ -21,7 +21,7 @@ class LedgerExport implements FromCollection, WithHeadings, WithMapping
     public function collection()
     {
         // Tenant global scope keeps this export scoped to the current store.
-        return Order::with('patient:id,name')
+        return Order::with('customer:id,name')
             ->whereBetween('created_at', [$this->from, $this->to])
             ->latest()
             ->limit(self::MAX_ROWS)
@@ -30,7 +30,7 @@ class LedgerExport implements FromCollection, WithHeadings, WithMapping
 
     public function headings(): array
     {
-        return ['Date', 'Receipt #', 'Patient', 'Status', 'Total', 'Advance', 'Balance'];
+        return ['Date', 'Receipt #', 'Customer', 'Status', 'Total', 'Advance', 'Balance'];
     }
 
     public function map($order): array
@@ -38,7 +38,7 @@ class LedgerExport implements FromCollection, WithHeadings, WithMapping
         return [
             $order->created_at->format('Y-m-d'),
             strtoupper(substr($order->id, 0, 8)),
-            $order->patient?->name ?? '—',
+            $order->customer?->name ?? '—',
             $order->status_label,
             (float) $order->total_amount,
             (float) $order->advance_paid,

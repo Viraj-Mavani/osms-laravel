@@ -1,5 +1,5 @@
 @php
-    /** @var \App\Models\Patient $patient */
+    /** @var \App\Models\Customer $customer */
     /** @var \App\Models\EyeRecord|null $record */
     $record = $record ?? null;
     $isEdit = (bool) $record;
@@ -15,7 +15,7 @@
 @endif
 
 <form method="POST"
-      action="{{ $isEdit ? route('tenant.eye-records.update', $record) : route('tenant.eye-records.store', $patient) }}"
+      action="{{ $isEdit ? route('tenant.eye-records.update', $record) : route('tenant.eye-records.store', $customer) }}"
       class="d-flex flex-column gap-4">
     @csrf
     @if ($isEdit) @method('PUT') @endif
@@ -26,13 +26,13 @@
             <p class="text-uppercase text-muted-foreground mb-3" style="font-size:.72rem;letter-spacing:.05em;">Examination details</p>
             <div class="row g-3">
                 <div class="col-sm-4">
-                    <label for="name" class="form-label small fw-medium mb-2">Patient name</label>
-                    <input id="name" type="text" class="form-control" value="{{ $patient->name }}" disabled>
-                    <div class="text-muted-foreground" style="font-size:.75rem;margin-top:.25rem;">{{ $patient->phone }}</div>
+                    <label for="name" class="form-label small fw-medium mb-2">Customer name</label>
+                    <input id="name" type="text" class="form-control" value="{{ $customer->name }}" disabled>
+                    <div class="text-muted-foreground" style="font-size:.75rem;margin-top:.25rem;">{{ $customer->phone }}</div>
                 </div>
                 <div class="col-sm-4">
                     <label for="contact" class="form-label small fw-medium mb-2">Contact number</label>
-                    <input id="contact" type="text" class="form-control" value="{{ $patient->phone }}" disabled>
+                    <input id="contact" type="text" class="form-control" value="{{ $customer->phone }}" disabled>
                 </div>
                 <div class="col-sm-4">
                     <label for="checked_by" class="form-label small fw-medium mb-2">Examined by</label>
@@ -134,7 +134,7 @@
 
     {{-- Actions --}}
     <div class="d-flex justify-content-end gap-2">
-        <a href="{{ route('tenant.patients.show', $patient) }}" class="btn btn-secondary">Cancel</a>
+        <a href="{{ route('tenant.customers.show', $customer) }}" class="btn btn-secondary">Cancel</a>
         <button type="submit" class="btn btn-primary">
             <i class="bi bi-check-lg me-2"></i>{{ $isEdit ? 'Save changes' : 'Save prescription' }}
         </button>

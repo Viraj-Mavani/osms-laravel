@@ -31,10 +31,10 @@
                     <div class="kanban-card card border-0 shadow-sm rounded-3 mb-2" data-id="{{ $order->id }}">
                         <div class="card-body p-3">
                             <a href="{{ route('tenant.orders.show', $order) }}" class="text-decoration-none text-reset d-block">
-                                <p class="mb-0 fw-medium text-truncate">{{ $order->patient?->name ?? 'Unknown patient' }}</p>
-                                @if ($order->patient?->phone)
+                                <p class="mb-0 fw-medium text-truncate">{{ $order->customer?->name ?? 'Unknown customer' }}</p>
+                                @if ($order->customer?->phone)
                                     <p class="mb-2 text-muted-foreground" style="font-size:.72rem;">
-                                        <i class="bi bi-telephone me-1"></i>{{ $order->patient->phone }}
+                                        <i class="bi bi-telephone me-1"></i>{{ $order->customer->phone }}
                                     </p>
                                 @endif
                                 <div class="row g-1 text-center" style="font-size:.72rem;">

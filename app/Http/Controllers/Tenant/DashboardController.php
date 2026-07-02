@@ -31,14 +31,14 @@ class DashboardController extends Controller
         $lowStock = $lowStockItems->take(5);
 
         // Overdue ready-for-pickup orders (waiting > 3 days)
-        $overduePickups = Order::with('patient:id,name')
+        $overduePickups = Order::with('customer:id,name')
             ->where('status', 'ready_for_pickup')
             ->where('updated_at', '<', $threeDaysAgo)
             ->limit(8)
             ->get()
             ->map(fn (Order $o) => [
                 'id' => $o->id,
-                'patient_name' => $o->patient?->name,
+                'customer_name' => $o->customer?->name,
                 'total_amount' => (float) $o->total_amount,
                 'days' => (int) $o->updated_at->diffInDays(now()),
             ]);

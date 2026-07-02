@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StorePatientRequest extends FormRequest
+class StoreCustomerRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,7 +14,7 @@ class StorePatientRequest extends FormRequest
 
     public function rules(): array
     {
-        $patientId = $this->route('patient')?->id;
+        $customerId = $this->route('customer')?->id;
 
         return [
             'name' => ['required', 'string', 'max:255'],
@@ -22,9 +22,9 @@ class StorePatientRequest extends FormRequest
                 // Normalised to "{code} {national}" in prepareForValidation, e.g. "+91 9876543210".
                 'required', 'string', 'max:30', 'regex:/^\+\d{1,4}\s\d{7,15}$/',
                 // Unique per tenant + phone (matches the Supabase constraint).
-                Rule::unique('patients')
+                Rule::unique('customers')
                     ->where('tenant_id', $this->user()->tenant_id)
-                    ->ignore($patientId),
+                    ->ignore($customerId),
             ],
             'age' => ['nullable', 'integer', 'min:0', 'max:150'],
             'gender' => ['nullable', Rule::in(['male', 'female', 'other'])],
@@ -34,7 +34,7 @@ class StorePatientRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone.unique' => 'A patient with this phone number already exists in your store.',
+            'phone.unique' => 'A customer with this phone number already exists in your store.',
             'phone.regex' => 'Enter a valid phone number (7–15 digits).',
         ];
     }

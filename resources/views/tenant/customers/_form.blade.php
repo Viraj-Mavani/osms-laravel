@@ -1,13 +1,13 @@
 @php
-    /** @var \App\Models\Patient|null $patient */
-    $patient = $patient ?? null;
-    $isEdit = (bool) $patient;
+    /** @var \App\Models\Customer|null $customer */
+    $customer = $customer ?? null;
+    $isEdit = (bool) $customer;
 
     $codes = ['+91', '+1', '+44', '+971', '+61', '+65', '+880', '+977'];
 
     // Stored phone is normalised as "{code} {national}" (e.g. "+91 9876543210").
     // Split it back for the form; old() (a failed submit) takes precedence.
-    $storedPhone = (string) ($patient->phone ?? '');
+    $storedPhone = (string) ($customer->phone ?? '');
     $storedCode = str_contains($storedPhone, ' ') ? \Illuminate\Support\Str::before($storedPhone, ' ') : '+91';
     $storedNational = str_contains($storedPhone, ' ') ? \Illuminate\Support\Str::afterLast($storedPhone, ' ') : $storedPhone;
 
@@ -16,7 +16,7 @@
         ? \Illuminate\Support\Str::of(old('phone'))->afterLast(' ')->toString()
         : $storedNational;
 
-    $cancelUrl = $isEdit ? route('tenant.patients.show', $patient) : route('tenant.patients.index');
+    $cancelUrl = $isEdit ? route('tenant.customers.show', $customer) : route('tenant.customers.index');
 @endphp
 
 @if ($errors->any())
@@ -26,14 +26,14 @@
 <div class="card border-0 shadow-sm rounded-4">
     <div class="card-body p-4">
         <form method="POST"
-              action="{{ $isEdit ? route('tenant.patients.update', $patient) : route('tenant.patients.store') }}"
+              action="{{ $isEdit ? route('tenant.customers.update', $customer) : route('tenant.customers.store') }}"
               class="d-flex flex-column gap-3">
             @csrf
             @if ($isEdit) @method('PUT') @endif
             <div class="row g-3">
                 <div class="col-sm-6">
                     <label for="name" class="form-label small fw-medium mb-1">Full name *</label>
-                    <input id="name" name="name" type="text" value="{{ old('name', $patient->name ?? '') }}"
+                    <input id="name" name="name" type="text" value="{{ old('name', $customer->name ?? '') }}"
                            class="form-control @error('name') is-invalid @enderror"
                            required autofocus placeholder="Rahul Kumar">
                     @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -54,13 +54,13 @@
                 </div>
                 <div class="col-sm-6">
                     <label for="age" class="form-label small fw-medium mb-1">Age</label>
-                    <input id="age" name="age" type="number" min="0" max="150" value="{{ old('age', $patient->age ?? '') }}"
+                    <input id="age" name="age" type="number" min="0" max="150" value="{{ old('age', $customer->age ?? '') }}"
                            class="form-control @error('age') is-invalid @enderror" placeholder="32">
                     @error('age')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-sm-6">
                     <label for="gender" class="form-label small fw-medium mb-1">Gender</label>
-                    @php $g = old('gender', $patient->gender ?? ''); @endphp
+                    @php $g = old('gender', $customer->gender ?? ''); @endphp
                     <select id="gender" name="gender" class="form-select">
                         <option value="">Prefer not to say</option>
                         <option value="male" @selected($g === 'male')>Male</option>
@@ -72,7 +72,7 @@
             <div class="d-flex justify-content-end gap-2 mt-2">
                 <a href="{{ $cancelUrl }}" class="btn btn-light">Cancel</a>
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg me-1"></i>{{ $isEdit ? 'Save changes' : 'Save patient' }}
+                    <i class="bi bi-check-lg me-1"></i>{{ $isEdit ? 'Save changes' : 'Save customer' }}
                 </button>
             </div>
         </form>

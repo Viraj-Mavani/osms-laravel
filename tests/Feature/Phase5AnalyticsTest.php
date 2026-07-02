@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Inventory;
 use App\Models\Order;
-use App\Models\Patient;
+use App\Models\Customer;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,13 +25,13 @@ class Phase5AnalyticsTest extends TestCase
 
     private function deliveredOrder(float $sell, float $cost, int $qty): Order
     {
-        $patient = Patient::create(['name' => 'P', 'phone' => (string) random_int(1, 1e9)]);
+        $customer = Customer::create(['name' => 'P', 'phone' => (string) random_int(1, 1e9)]);
         $item = Inventory::create([
             'sku' => 'S-' . uniqid(), 'barcode' => (string) random_int(1e11, 9e11), 'item_type' => 'frame',
             'brand' => 'Ray-Ban', 'cost_price' => $cost, 'selling_price' => $sell, 'stock_qty' => 100, 'min_alert_qty' => 1,
         ]);
         $order = Order::create([
-            'patient_id' => $patient->id, 'status' => 'delivered',
+            'customer_id' => $customer->id, 'status' => 'delivered',
             'total_amount' => $sell * $qty, 'advance_paid' => 0,
         ]);
         $order->items()->create(['inventory_id' => $item->id, 'quantity' => $qty, 'unit_price' => $sell]);
@@ -60,8 +60,8 @@ class Phase5AnalyticsTest extends TestCase
     public function test_pending_dues_listed(): void
     {
         $this->actingAs($this->admin);
-        $patient = Patient::create(['name' => 'Debtor', 'phone' => '555']);
-        Order::create(['patient_id' => $patient->id, 'status' => 'pending', 'total_amount' => 1000, 'advance_paid' => 400]);
+        $customer = Customer::create(['name' => 'Debtor', 'phone' => '555']);
+        Order::create(['customer_id' => $customer->id, 'status' => 'pending', 'total_amount' => 1000, 'advance_paid' => 400]);
 
         $this->actingAs($this->admin)->get(route('tenant.analytics.index'))
             ->assertOk()->assertSee('Debtor')->assertSee('600.00'); // balance due

@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Order;
-use App\Models\Patient;
+use App\Models\Customer;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,19 +27,19 @@ class Phase9OrderIndexTest extends TestCase
         $this->actingAs($this->user);
     }
 
-    private function makeOrder(string $patientName, string $phone, array $attrs = []): Order
+    private function makeOrder(string $customerName, string $phone, array $attrs = []): Order
     {
-        $patient = Patient::create(['name' => $patientName, 'phone' => $phone]);
+        $customer = Customer::create(['name' => $customerName, 'phone' => $phone]);
 
         return Order::create(array_merge([
-            'patient_id' => $patient->id,
+            'customer_id' => $customer->id,
             'status' => 'pending',
             'total_amount' => 100,
             'advance_paid' => 0,
         ], $attrs));
     }
 
-    public function test_search_filters_orders_by_patient_name_or_phone(): void
+    public function test_search_filters_orders_by_customer_name_or_phone(): void
     {
         $this->makeOrder('Alice Wonder', '900000001');
         $this->makeOrder('Bob Builder', '900000002');

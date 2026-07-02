@@ -2,19 +2,19 @@
 
 namespace App\Exports;
 
-use App\Models\Patient;
+use App\Models\Customer;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
 /**
- * FG-Export — patient list export honouring the active index search filter.
+ * FG-Export — customer list export honouring the active index search filter.
  * Tenant-scoped by the global scope; a hard row ceiling keeps a wide export
  * bounded in memory (mirrors LedgerExport).
  */
-class PatientsExport implements FromCollection, WithHeadings, WithMapping
+class CustomersExport implements FromCollection, WithHeadings, WithMapping
 {
-    /** Hard ceiling so a large patient book can't pull an unbounded set into memory. */
+    /** Hard ceiling so a large customer book can't pull an unbounded set into memory. */
     private const MAX_ROWS = 5000;
 
     public function __construct(
@@ -23,8 +23,8 @@ class PatientsExport implements FromCollection, WithHeadings, WithMapping
 
     public function collection()
     {
-        // Same filter shape as PatientController::index (tenant scope applies).
-        return Patient::query()
+        // Same filter shape as CustomerController::index (tenant scope applies).
+        return Customer::query()
             ->when($this->q !== '', function ($query) {
                 $query->where(function ($sub) {
                     $sub->where('name', 'like', "%{$this->q}%")
@@ -41,14 +41,14 @@ class PatientsExport implements FromCollection, WithHeadings, WithMapping
         return ['Name', 'Phone', 'Age', 'Gender', 'Added'];
     }
 
-    public function map($patient): array
+    public function map($customer): array
     {
         return [
-            $patient->name,
-            $patient->phone,
-            $patient->age,
-            $patient->gender,
-            $patient->created_at->format('Y-m-d'),
+            $customer->name,
+            $customer->phone,
+            $customer->age,
+            $customer->gender,
+            $customer->created_at->format('Y-m-d'),
         ];
     }
 }

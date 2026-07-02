@@ -43,7 +43,7 @@
                 @php
                     $actions = [
                         ['route' => 'tenant.orders.create', 'label' => 'New order', 'desc' => 'Create a POS estimate', 'icon' => 'bi-cart-plus'],
-                        ['route' => 'tenant.patients.create', 'label' => 'New patient', 'desc' => 'Register a customer', 'icon' => 'bi-person-plus'],
+                        ['route' => 'tenant.customers.create', 'label' => 'New customer', 'desc' => 'Register a customer', 'icon' => 'bi-person-plus'],
                         ['route' => 'tenant.inventory.create', 'label' => 'Add stock', 'desc' => 'New frame or lens', 'icon' => 'bi-plus-square'],
                         ['route' => 'tenant.inventory.index', 'params' => ['scan' => 1], 'label' => 'Scan barcode', 'desc' => 'Look up an item', 'icon' => 'bi-upc-scan'],
                     ];
@@ -86,7 +86,7 @@
                            class="list-group-item list-group-item-action d-flex gap-2 align-items-start">
                             <i class="bi bi-hourglass-split text-warning mt-1"></i>
                             <div class="flex-grow-1 min-w-0">
-                                <p class="mb-0 fw-medium small text-truncate">{{ $o['patient_name'] ?? 'Walk-in' }}</p>
+                                <p class="mb-0 fw-medium small text-truncate">{{ $o['customer_name'] ?? 'Walk-in' }}</p>
                                 <p class="mb-0 text-muted-foreground" style="font-size:.72rem;">
                                     Ready {{ $o['days'] }} day{{ $o['days'] == 1 ? '' : 's' }} — uncollected
                                 </p>

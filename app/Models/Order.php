@@ -13,7 +13,7 @@ class Order extends Model
     use HasUuid, BelongsToTenant;
 
     protected $fillable = [
-        'tenant_id', 'patient_id', 'eye_record_id', 'status',
+        'tenant_id', 'customer_id', 'eye_record_id', 'status',
         'total_amount', 'advance_paid', 'balance_due',
         'cancelled_at', 'cancel_reason',
     ];
@@ -33,9 +33,9 @@ class Order extends Model
         });
     }
 
-    public function patient(): BelongsTo
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(Customer::class);
     }
 
     public function eyeRecord(): BelongsTo

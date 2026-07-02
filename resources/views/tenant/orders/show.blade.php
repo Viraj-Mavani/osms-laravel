@@ -3,7 +3,7 @@
 
 @php
     $rx = $order->eyeRecord;
-    $p = $order->patient;
+    $p = $order->customer;
     $num = strtoupper(substr($order->id, 0, 8));
     $nz = fn ($v) => is_null($v) ? '—' : $v;
 @endphp
@@ -99,11 +99,11 @@
                     </div>
                 </div>
 
-                {{-- Patient + Rx --}}
+                {{-- Customer + Rx --}}
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <div class="border rounded-3 bg-light bg-opacity-50 p-3 h-100">
-                            <p class="text-uppercase text-muted-foreground mb-1" style="font-size:.62rem;letter-spacing:.05em;">Patient</p>
+                            <p class="text-uppercase text-muted-foreground mb-1" style="font-size:.62rem;letter-spacing:.05em;">Customer</p>
                             <p class="fw-semibold font-display mb-1">{{ $p?->name }}</p>
                             <div class="text-muted-foreground" style="font-size:.78rem;">
                                 @if ($p?->phone)<p class="mb-0"><i class="bi bi-telephone me-1"></i>{{ $p->phone }}</p>@endif

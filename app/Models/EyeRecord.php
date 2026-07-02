@@ -12,7 +12,7 @@ class EyeRecord extends Model
     use HasUuid, BelongsToTenant;
 
     protected $fillable = [
-        'tenant_id', 'patient_id', 'recorded_by',
+        'tenant_id', 'customer_id', 'recorded_by',
         // OD (right eye)
         'od_sph', 'od_cyl', 'od_axis', 'od_add', 'od_va', 'od_spl', 'od_dv', 'od_nv',
         // OS (left eye)
@@ -20,9 +20,9 @@ class EyeRecord extends Model
         'pd', 'notes',
     ];
 
-    public function patient(): BelongsTo
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(Customer::class);
     }
 
     public function recorder(): BelongsTo

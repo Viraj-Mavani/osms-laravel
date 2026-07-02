@@ -18,7 +18,7 @@
 
     <form method="POST" action="{{ route('tenant.orders.store') }}" @submit="validateForm($event)">
         @csrf
-        <input type="hidden" name="patient_id" :value="patientId">
+        <input type="hidden" name="customer_id" :value="customerId">
         <input type="hidden" name="eye_record_id" :value="eyeRecordId">
         <input type="hidden" name="advance_paid" :value="advancePaid">
         <template x-for="(it, idx) in items" :key="it.inventory_id">
@@ -31,38 +31,38 @@
         <div class="row g-4">
             {{-- Left column --}}
             <div class="col-lg-8 d-flex flex-column gap-4">
-                {{-- Patient picker --}}
+                {{-- Customer picker --}}
                 <div class="card border-0 shadow-sm rounded-4">
                     <div class="card-body p-4">
-                        <h2 class="section-label mb-3">Patient</h2>
-                        <div x-show="!patientId" class="position-relative">
+                        <h2 class="section-label mb-3">Customer</h2>
+                        <div x-show="!customerId" class="position-relative">
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><i class="bi bi-search text-muted-foreground"></i></span>
-                                <input type="text" class="form-control" placeholder="Search patient by name or phone…"
-                                       x-model="patientSearch" data-barcode-target>
+                                <input type="text" class="form-control" placeholder="Search customer by name or phone…"
+                                       x-model="customerSearch" data-barcode-target>
                             </div>
                             <div class="list-group position-absolute w-100 shadow-sm" style="z-index:5;"
-                                 x-show="patientSearch.length > 0 && filteredPatients().length">
-                                <template x-for="p in filteredPatients()" :key="p.id">
+                                 x-show="customerSearch.length > 0 && filteredCustomers().length">
+                                <template x-for="c in filteredCustomers()" :key="c.id">
                                     <button type="button" class="list-group-item list-group-item-action"
-                                            @click="selectPatient(p)">
-                                        <span class="fw-medium" x-text="p.name"></span>
-                                        <span class="text-muted-foreground small" x-text="' · ' + p.phone"></span>
+                                            @click="selectCustomer(c)">
+                                        <span class="fw-medium" x-text="c.name"></span>
+                                        <span class="text-muted-foreground small" x-text="' · ' + c.phone"></span>
                                     </button>
                                 </template>
                             </div>
                         </div>
 
-                        <div x-show="patientId" class="d-flex align-items-center justify-content-between">
+                        <div x-show="customerId" class="d-flex align-items-center justify-content-between">
                             <div>
-                                <p class="mb-0 fw-medium" x-text="selectedPatient?.name"></p>
-                                <p class="mb-0 text-muted-foreground small" x-text="selectedPatient?.phone"></p>
+                                <p class="mb-0 fw-medium" x-text="selectedCustomer?.name"></p>
+                                <p class="mb-0 text-muted-foreground small" x-text="selectedCustomer?.phone"></p>
                             </div>
-                            <button type="button" class="btn btn-sm btn-light" @click="clearPatient()">Change</button>
+                            <button type="button" class="btn btn-sm btn-light" @click="clearCustomer()">Change</button>
                         </div>
 
                         {{-- Eye record select --}}
-                        <div x-show="patientId && eyeRecords.length" class="mt-3">
+                        <div x-show="customerId && eyeRecords.length" class="mt-3">
                             <label class="form-label small fw-medium mb-1">Attach prescription (optional)</label>
                             <select class="form-select" x-model="eyeRecordId">
                                 <option value="">No prescription</option>
@@ -123,9 +123,9 @@
                                             <td x-text="it.label"></td>
                                             <td>
                                                 <div class="input-group input-group-sm" style="width:7rem;">
-                                                    <button type="button" class="btn btn-outline-secondary" @click="changeQty(it,-1)" aria-label="Decrease quantity"><i class="bi bi-dash-lg"></i></button>
+                                                    <button type="button" class="btn btn-light" @click="changeQty(it,-1)" aria-label="Decrease quantity"><i class="bi bi-dash-lg"></i></button>
                                                     <input type="text" class="form-control text-center" :value="it.quantity" readonly>
-                                                    <button type="button" class="btn btn-outline-secondary" @click="changeQty(it,1)" aria-label="Increase quantity"><i class="bi bi-plus-lg"></i></button>
+                                                    <button type="button" class="btn btn-light" @click="changeQty(it,1)" aria-label="Increase quantity"><i class="bi bi-plus-lg"></i></button>
                                                 </div>
                                             </td>
                                             <td class="text-end font-monospace" x-text="money(it.unit_price)"></td>
@@ -180,23 +180,23 @@
 
     function orderBuilder() {
         return {
-            patients: @json($patients),
+            customers: @json($customers),
             inventory: @json($inventory),
-            patientId: '', selectedPatient: null, patientSearch: '',
+            customerId: '', selectedCustomer: null, customerSearch: '',
             eyeRecords: [], eyeRecordId: '',
             items: [], itemSearch: '', scanFlash: null,
             advancePaid: '0',
 
             init() {
-                const pre = @json($selectedPatientId);
-                if (pre) { const p = this.patients.find(x => x.id === pre); if (p) this.selectPatient(p); }
+                const pre = @json($selectedCustomerId);
+                if (pre) { const c = this.customers.find(x => x.id === pre); if (c) this.selectCustomer(c); }
                 window.addEventListener('osms-barcode', (e) => this.onScan(e.detail));
             },
             money(n) { return '₹ ' + Number(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); },
-            filteredPatients() {
-                const q = this.patientSearch.trim().toLowerCase();
+            filteredCustomers() {
+                const q = this.customerSearch.trim().toLowerCase();
                 if (!q) return [];
-                return this.patients.filter(p => (p.name+' '+p.phone).toLowerCase().includes(q)).slice(0,6);
+                return this.customers.filter(c => (c.name+' '+c.phone).toLowerCase().includes(q)).slice(0,6);
             },
             filteredInventory() {
                 const q = this.itemSearch.trim().toLowerCase();
@@ -204,12 +204,12 @@
                 return this.inventory.filter(i =>
                     [i.brand,i.model_name,i.sku,i.barcode].some(v => v && v.toLowerCase().includes(q))).slice(0,6);
             },
-            selectPatient(p) {
-                this.patientId = p.id; this.selectedPatient = p; this.patientSearch = '';
-                fetch(`{{ url('tenant/patients') }}/${p.id}/eye-records`, {headers:{'Accept':'application/json'}})
+            selectCustomer(c) {
+                this.customerId = c.id; this.selectedCustomer = c; this.customerSearch = '';
+                fetch(`{{ url('tenant/customers') }}/${c.id}/eye-records`, {headers:{'Accept':'application/json'}})
                     .then(r => r.json()).then(d => { this.eyeRecords = d; this.eyeRecordId = d[0]?.id || ''; });
             },
-            clearPatient() { this.patientId=''; this.selectedPatient=null; this.eyeRecords=[]; this.eyeRecordId=''; },
+            clearCustomer() { this.customerId=''; this.selectedCustomer=null; this.eyeRecords=[]; this.eyeRecordId=''; },
             addItem(inv, qty=1) {
                 const ex = this.items.find(i => i.inventory_id === inv.id);
                 if (ex) { ex.quantity = Math.min(ex.max_stock, ex.quantity + qty); return; }
@@ -230,7 +230,7 @@
             total() { return this.items.reduce((s,i)=> s + i.unit_price*i.quantity, 0); },
             itemCount() { return this.items.reduce((s,i)=> s + i.quantity, 0); },
             balance() { return Math.max(this.total() - (Number(this.advancePaid)||0), 0); },
-            canSubmit() { return this.patientId && this.items.length > 0; },
+            canSubmit() { return this.customerId && this.items.length > 0; },
             validateForm(e) {
                 if (!this.canSubmit()) { e.preventDefault(); return false; }
                 if ((Number(this.advancePaid)||0) > this.total()) {

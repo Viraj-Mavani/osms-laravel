@@ -1,36 +1,36 @@
 @extends('layouts.app')
-@section('title', $patient->name)
+@section('title', $customer->name)
 
 @section('content')
 <div class="p-4 p-md-5">
-    <a href="{{ route('tenant.patients.index') }}"
+    <a href="{{ route('tenant.customers.index') }}"
        class="d-inline-flex align-items-center gap-1 text-muted-foreground text-decoration-none mb-3" style="font-size:.8rem;">
-        <i class="bi bi-chevron-left"></i> Back to patients
+        <i class="bi bi-chevron-left"></i> Back to customers
     </a>
 
-    {{-- Patient header --}}
+    {{-- Customer header --}}
     <div class="glass card-lift rounded-4 p-4 mb-4 d-flex flex-column flex-md-row gap-3 align-items-md-end justify-content-between">
         <div class="d-flex align-items-start gap-3">
             <span class="d-inline-flex align-items-center justify-content-center rounded-4 bg-primary text-white"
                   style="width:3.25rem;height:3.25rem;"><i class="bi bi-person fs-4"></i></span>
             <div>
-                <h1 class="h3 fw-semibold font-display mb-1">{{ $patient->name }}</h1>
+                <h1 class="h3 fw-semibold font-display mb-1">{{ $customer->name }}</h1>
                 <div class="d-flex flex-wrap gap-3 text-muted-foreground" style="font-size:.85rem;">
-                    <span><i class="bi bi-telephone me-1"></i>{{ $patient->phone }}</span>
-                    @if ($patient->age)<span><i class="bi bi-calendar3 me-1"></i>{{ $patient->age }} yrs</span>@endif
-                    @if ($patient->gender)<span class="text-capitalize">{{ $patient->gender }}</span>@endif
-                    <span style="font-size:.78rem;">Added {{ $patient->created_at->format('d M Y') }}</span>
+                    <span><i class="bi bi-telephone me-1"></i>{{ $customer->phone }}</span>
+                    @if ($customer->age)<span><i class="bi bi-calendar3 me-1"></i>{{ $customer->age }} yrs</span>@endif
+                    @if ($customer->gender)<span class="text-capitalize">{{ $customer->gender }}</span>@endif
+                    <span style="font-size:.78rem;">Added {{ $customer->created_at->format('d M Y') }}</span>
                 </div>
             </div>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <a href="{{ route('tenant.patients.edit', $patient) }}" class="btn btn-light">
+            <a href="{{ route('tenant.customers.edit', $customer) }}" class="btn btn-light">
                 <i class="bi bi-pencil me-1"></i> Edit
             </a>
-            <a href="{{ route('tenant.eye-records.create', $patient) }}" class="btn btn-outline-primary">
+            <a href="{{ route('tenant.eye-records.create', $customer) }}" class="btn btn-outline-primary">
                 <i class="bi bi-plus-lg me-1"></i> New eye record
             </a>
-            <a href="{{ safe_route('tenant.orders.create', ['patient' => $patient->id]) }}" class="btn btn-primary">
+            <a href="{{ safe_route('tenant.orders.create', ['customer' => $customer->id]) }}" class="btn btn-primary">
                 <i class="bi bi-cart-plus me-1"></i> New order
             </a>
             <div class="dropdown">
@@ -39,14 +39,14 @@
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow rounded-3 border-0" style="box-shadow: var(--shadow-overlay);">
                     <li>
-                        <form method="POST" action="{{ route('tenant.patients.destroy', $patient) }}" class="m-0">
+                        <form method="POST" action="{{ route('tenant.customers.destroy', $customer) }}" class="m-0">
                             @csrf
                             @method('DELETE')
                             <button type="button" class="dropdown-item d-flex align-items-center gap-2 text-danger"
-                                    data-confirm="Archive {{ $patient->name }}? The record is recoverable from the archive for 30 days."
-                                    data-confirm-title="Archive patient"
+                                    data-confirm="Archive {{ $customer->name }}? The record is recoverable from the archive for 30 days."
+                                    data-confirm-title="Archive customer"
                                     data-confirm-label="Archive">
-                                <i class="bi bi-archive"></i> Archive patient
+                                <i class="bi bi-archive"></i> Archive customer
                             </button>
                         </form>
                     </li>
@@ -62,7 +62,7 @@
             <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary mb-3"
                   style="width:3rem;height:3rem;"><i class="bi bi-clipboard fs-4"></i></span>
             <p class="fw-medium mb-1">No history yet</p>
-            <p class="text-muted-foreground mb-0">Add an eye record to begin this patient's timeline.</p>
+            <p class="text-muted-foreground mb-0">Add an eye record to begin this customer's timeline.</p>
         </div>
     @else
         <div class="d-flex flex-column gap-3">

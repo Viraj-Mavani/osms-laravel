@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Inventory;
-use App\Models\Patient;
+use App\Models\Customer;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -35,9 +35,9 @@ class Phase8QaFixesTest extends TestCase
     {
         $user = $this->storeUser();
         $this->actingAs($user);
-        $patient = Patient::create(['name' => 'Rahul', 'phone' => '111']);
+        $customer = Customer::create(['name' => 'Rahul', 'phone' => '111']);
 
-        $this->actingAs($user)->post(route('tenant.eye-records.store', $patient), [
+        $this->actingAs($user)->post(route('tenant.eye-records.store', $customer), [
             'od_sph' => 1000,   // way out of the decimal(5,2) range
             'os_cyl' => -9999,
         ])->assertSessionHasErrors(['od_sph', 'os_cyl']);
@@ -50,9 +50,9 @@ class Phase8QaFixesTest extends TestCase
     {
         $user = $this->storeUser();
         $this->actingAs($user);
-        $patient = Patient::create(['name' => 'Rahul', 'phone' => '111']);
+        $customer = Customer::create(['name' => 'Rahul', 'phone' => '111']);
 
-        $this->actingAs($user)->post(route('tenant.eye-records.store', $patient), [
+        $this->actingAs($user)->post(route('tenant.eye-records.store', $customer), [
             'od_sph' => -2.5, 'od_cyl' => -1.0, 'od_axis' => 90, 'od_add' => 2.0,
         ])->assertSessionHasNoErrors()->assertRedirect();
 
@@ -99,14 +99,14 @@ class Phase8QaFixesTest extends TestCase
     {
         $user = $this->storeUser();
         $this->actingAs($user);
-        $patient = Patient::create(['name' => 'Rahul', 'phone' => '111']);
+        $customer = Customer::create(['name' => 'Rahul', 'phone' => '111']);
         $item = Inventory::create([
             'sku' => 'FRM-A-AAAAAA', 'barcode' => '111111111111', 'item_type' => 'frame',
             'cost_price' => 1, 'selling_price' => 2, 'stock_qty' => 100000, 'min_alert_qty' => 1,
         ]);
 
         $this->actingAs($user)->post(route('tenant.orders.store'), [
-            'patient_id' => $patient->id,
+            'customer_id' => $customer->id,
             'items' => [['inventory_id' => $item->id, 'quantity' => 99999]],
         ])->assertSessionHasErrors('items.0.quantity');
 

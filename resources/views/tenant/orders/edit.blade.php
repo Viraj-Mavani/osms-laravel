@@ -32,14 +32,14 @@
         <div class="row g-4">
             {{-- Left column --}}
             <div class="col-lg-8 d-flex flex-column gap-4">
-                {{-- Patient (locked on edit) --}}
+                {{-- Customer (locked on edit) --}}
                 <div class="card border-0 shadow-sm rounded-4">
                     <div class="card-body p-4">
-                        <h2 class="section-label mb-3">Patient</h2>
+                        <h2 class="section-label mb-3">Customer</h2>
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
-                                <p class="mb-0 fw-medium">{{ $order->patient->name }}</p>
-                                <p class="mb-0 text-muted-foreground small">{{ $order->patient->phone }}</p>
+                                <p class="mb-0 fw-medium">{{ $order->customer->name }}</p>
+                                <p class="mb-0 text-muted-foreground small">{{ $order->customer->phone }}</p>
                             </div>
                             <span class="badge text-bg-light">Fixed</span>
                         </div>

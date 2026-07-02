@@ -72,7 +72,7 @@ class AnalyticsController extends Controller
 
         // Ledger — orders in range (default 50; "show all" raises the cap but never removes it).
         $showAllLedger = $request->boolean('ledger_all');
-        $ledger = Order::with('patient:id,name')
+        $ledger = Order::with('customer:id,name')
             ->whereBetween('created_at', [$from, $to])
             ->latest()
             ->limit($showAllLedger ? self::MAX_ROWS : 50)
@@ -80,7 +80,7 @@ class AnalyticsController extends Controller
 
         // Pending dues — outstanding balances (default 50; "show all" raises the cap but never removes it).
         $showAllDues = $request->boolean('dues_all');
-        $dues = Order::with('patient:id,name,phone')
+        $dues = Order::with('customer:id,name,phone')
             ->where('status', '!=', 'cancelled')
             ->where('balance_due', '>', 0)
             ->orderByDesc('balance_due')

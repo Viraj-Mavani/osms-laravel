@@ -105,14 +105,14 @@
                 <div class="table-responsive">
                     <table class="table align-middle mb-0">
                         <thead class="text-muted-foreground" style="font-size:.78rem;">
-                            <tr><th class="ps-4">Date</th><th>Patient</th><th>Status</th>
+                            <tr><th class="ps-4">Date</th><th>Customer</th><th>Status</th>
                                 <th class="text-end">Total</th><th class="text-end">Advance</th><th class="text-end pe-4">Balance</th></tr>
                         </thead>
                         <tbody>
                             @forelse ($ledger as $o)
                                 <tr role="button" onclick="window.location='{{ route('tenant.orders.show', $o) }}'">
                                     <td class="ps-4" style="font-size:.85rem;">{{ $o->created_at->format('d M Y') }}</td>
-                                    <td>{{ $o->patient?->name ?? '—' }}</td>
+                                    <td>{{ $o->customer?->name ?? '—' }}</td>
                                     <td><span class="badge text-bg-light text-capitalize">{{ str_replace('_', ' ', $o->status) }}</span></td>
                                     <td class="text-end font-monospace">₹ {{ number_format($o->total_amount, 2) }}</td>
                                     <td class="text-end font-monospace">₹ {{ number_format($o->advance_paid, 2) }}</td>
@@ -144,14 +144,14 @@
                 <div class="table-responsive">
                     <table class="table align-middle mb-0">
                         <thead class="text-muted-foreground" style="font-size:.78rem;">
-                            <tr><th class="ps-4">Patient</th><th>Phone</th><th>Date</th>
+                            <tr><th class="ps-4">Customer</th><th>Phone</th><th>Date</th>
                                 <th class="text-end">Total</th><th class="text-end">Advance</th><th class="text-end pe-4">Balance due</th></tr>
                         </thead>
                         <tbody>
                             @forelse ($dues as $o)
                                 <tr role="button" onclick="window.location='{{ route('tenant.orders.show', $o) }}'">
-                                    <td class="ps-4 fw-medium">{{ $o->patient?->name ?? '—' }}</td>
-                                    <td>{{ $o->patient?->phone ?? '—' }}</td>
+                                    <td class="ps-4 fw-medium">{{ $o->customer?->name ?? '—' }}</td>
+                                    <td>{{ $o->customer?->phone ?? '—' }}</td>
                                     <td style="font-size:.85rem;">{{ $o->created_at->format('d M Y') }}</td>
                                     <td class="text-end font-monospace">₹ {{ number_format($o->total_amount, 2) }}</td>
                                     <td class="text-end font-monospace">₹ {{ number_format($o->advance_paid, 2) }}</td>

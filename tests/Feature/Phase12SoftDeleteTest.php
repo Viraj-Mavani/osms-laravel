@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Models\Inventory;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Patient;
+use App\Models\Customer;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,9 +30,9 @@ class Phase12SoftDeleteTest extends TestCase
         $this->user = User::factory()->create(['tenant_id' => $tenant->id, 'role' => 'store_admin']);
     }
 
-    private function makePatient(string $name = 'Rahul'): Patient
+    private function makePatient(string $name = 'Rahul'): Customer
     {
-        return Patient::create([
+        return Customer::create([
             'tenant_id' => $this->user->tenant_id,
             'name' => $name, 'phone' => '+91 90000' . random_int(10000, 99999),
         ]);
@@ -50,10 +50,10 @@ class Phase12SoftDeleteTest extends TestCase
 
     private function orderFor(Inventory $item, string $status = 'pending'): Order
     {
-        $patient = $this->makePatient('Ordering Pat');
+        $customer = $this->makePatient('Ordering Pat');
         $order = Order::create([
             'tenant_id' => $this->user->tenant_id,
-            'patient_id' => $patient->id, 'status' => $status,
+            'customer_id' => $customer->id, 'status' => $status,
             'total_amount' => 250, 'advance_paid' => 0,
         ]);
         OrderItem::create([
@@ -68,64 +68,64 @@ class Phase12SoftDeleteTest extends TestCase
 
     public function test_archiving_a_patient_soft_deletes_it(): void
     {
-        $patient = $this->makePatient();
+        $customer = $this->makePatient();
 
-        $this->actingAs($this->user)->delete(route('tenant.patients.destroy', $patient))
+        $this->actingAs($this->user)->delete(route('tenant.customers.destroy', $customer))
             ->assertRedirect()->assertSessionHas('status');
 
-        $this->assertSoftDeleted('patients', ['id' => $patient->id]);
-        $this->assertSame(0, Patient::count());               // hidden from normal queries
-        $this->assertSame(1, Patient::onlyTrashed()->count()); // present in the archive
+        $this->assertSoftDeleted('customers', ['id' => $customer->id]);
+        $this->assertSame(0, Customer::count());               // hidden from normal queries
+        $this->assertSame(1, Customer::onlyTrashed()->count()); // present in the archive
     }
 
     public function test_archiving_a_patient_with_orders_is_blocked(): void
     {
         $item = $this->makeItem();
         $order = $this->orderFor($item);
-        $patient = $order->patient;
+        $customer = $order->customer;
 
-        $this->actingAs($this->user)->delete(route('tenant.patients.destroy', $patient))
+        $this->actingAs($this->user)->delete(route('tenant.customers.destroy', $customer))
             ->assertRedirect()->assertSessionHas('error');
 
-        $this->assertNotSoftDeleted('patients', ['id' => $patient->id]);
+        $this->assertNotSoftDeleted('customers', ['id' => $customer->id]);
     }
 
     public function test_restoring_a_patient_brings_it_back(): void
     {
-        $patient = $this->makePatient();
-        $patient->delete();
+        $customer = $this->makePatient();
+        $customer->delete();
 
-        $this->actingAs($this->user)->patch(route('tenant.patients.restore', $patient))
+        $this->actingAs($this->user)->patch(route('tenant.customers.restore', $customer))
             ->assertRedirect();
 
-        $this->assertNotSoftDeleted('patients', ['id' => $patient->id]);
-        $this->assertSame(1, Patient::count());
+        $this->assertNotSoftDeleted('customers', ['id' => $customer->id]);
+        $this->assertSame(1, Customer::count());
     }
 
     public function test_force_deleting_a_patient_removes_it_permanently(): void
     {
-        $patient = $this->makePatient();
-        $patient->delete();
+        $customer = $this->makePatient();
+        $customer->delete();
 
-        $this->actingAs($this->user)->delete(route('tenant.patients.force-delete', $patient))
+        $this->actingAs($this->user)->delete(route('tenant.customers.force-delete', $customer))
             ->assertRedirect();
 
-        $this->assertDatabaseMissing('patients', ['id' => $patient->id]);
+        $this->assertDatabaseMissing('customers', ['id' => $customer->id]);
     }
 
     public function test_cannot_archive_or_restore_another_tenants_patient(): void
     {
-        $patient = $this->makePatient();
+        $customer = $this->makePatient();
 
         $other = Tenant::create(['store_name' => 'Other']);
         $otherUser = User::factory()->create(['tenant_id' => $other->id, 'role' => 'store_admin']);
 
-        $this->actingAs($otherUser)->delete(route('tenant.patients.destroy', $patient))->assertNotFound();
-        $this->assertNotSoftDeleted('patients', ['id' => $patient->id]);
+        $this->actingAs($otherUser)->delete(route('tenant.customers.destroy', $customer))->assertNotFound();
+        $this->assertNotSoftDeleted('customers', ['id' => $customer->id]);
 
-        $patient->delete();
-        $this->actingAs($otherUser)->patch(route('tenant.patients.restore', $patient))->assertNotFound();
-        $this->assertSoftDeleted('patients', ['id' => $patient->id]);
+        $customer->delete();
+        $this->actingAs($otherUser)->patch(route('tenant.customers.restore', $customer))->assertNotFound();
+        $this->assertSoftDeleted('customers', ['id' => $customer->id]);
     }
 
     // ---- Inventory ----
@@ -199,14 +199,14 @@ class Phase12SoftDeleteTest extends TestCase
         }
 
         // Age two of them past the 30-day cutoff (bypass model events).
-        DB::table('patients')->where('id', $old->id)->update(['deleted_at' => now()->subDays(40)]);
+        DB::table('customers')->where('id', $old->id)->update(['deleted_at' => now()->subDays(40)]);
         DB::table('inventory')->where('id', $oldItem->id)->update(['deleted_at' => now()->subDays(31)]);
 
         $this->artisan('model:purge-trashed')->assertSuccessful();
 
-        $this->assertDatabaseMissing('patients', ['id' => $old->id]);      // purged
+        $this->assertDatabaseMissing('customers', ['id' => $old->id]);      // purged
         $this->assertDatabaseMissing('inventory', ['id' => $oldItem->id]); // purged
-        $this->assertSoftDeleted('patients', ['id' => $recent->id]);       // still within window
+        $this->assertSoftDeleted('customers', ['id' => $recent->id]);       // still within window
     }
 
     // ---- Archive views render ----
@@ -218,7 +218,7 @@ class Phase12SoftDeleteTest extends TestCase
         $i = $this->makeItem();
         $i->delete();
 
-        $this->actingAs($this->user)->get(route('tenant.patients.trash'))
+        $this->actingAs($this->user)->get(route('tenant.customers.trash'))
             ->assertOk()->assertSee('Archive')->assertSee($p->name);
         $this->actingAs($this->user)->get(route('tenant.inventory.trash'))
             ->assertOk()->assertSee('Archive')->assertSee($i->model_name);

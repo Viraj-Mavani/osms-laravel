@@ -5,7 +5,7 @@
 
     $tenantLinks = [
         ['route' => 'tenant.dashboard', 'label' => 'Dashboard', 'icon' => 'bi-grid-1x2', 'match' => 'tenant.dashboard'],
-        ['route' => 'tenant.patients.index', 'label' => 'Patients', 'icon' => 'bi-people', 'match' => 'tenant.patients.*'],
+        ['route' => 'tenant.customers.index', 'label' => 'Customers', 'icon' => 'bi-people', 'match' => 'tenant.customers.*'],
         ['route' => 'tenant.inventory.index', 'label' => 'Inventory', 'icon' => 'bi-box-seam', 'match' => 'tenant.inventory.*'],
         ['route' => 'tenant.orders.index', 'label' => 'Orders', 'icon' => 'bi-cart3', 'match' => 'tenant.orders.*'],
         ['route' => 'tenant.analytics.index', 'label' => 'Analytics', 'icon' => 'bi-bar-chart', 'match' => 'tenant.analytics.*'],

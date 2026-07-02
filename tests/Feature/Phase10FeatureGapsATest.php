@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\EyeRecord;
-use App\Models\Patient;
+use App\Models\Customer;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,9 +30,9 @@ class Phase10FeatureGapsATest extends TestCase
     {
         $user = $this->storeUser();
         $this->actingAs($user);
-        $patient = Patient::create(['name' => 'Rahul', 'phone' => '+91 9876543210']);
+        $customer = Customer::create(['name' => 'Rahul', 'phone' => '+91 9876543210']);
 
-        $this->actingAs($user)->get(route('tenant.patients.edit', $patient))
+        $this->actingAs($user)->get(route('tenant.customers.edit', $customer))
             ->assertOk()->assertSee('Rahul');
     }
 
@@ -40,18 +40,18 @@ class Phase10FeatureGapsATest extends TestCase
     {
         $user = $this->storeUser();
         $this->actingAs($user);
-        $patient = Patient::create(['name' => 'Rahul', 'phone' => '+91 9876543210', 'age' => 30]);
+        $customer = Customer::create(['name' => 'Rahul', 'phone' => '+91 9876543210', 'age' => 30]);
 
-        $this->actingAs($user)->put(route('tenant.patients.update', $patient), [
+        $this->actingAs($user)->put(route('tenant.customers.update', $customer), [
             'name' => 'Rahul Kumar',
             'country_code' => '+91',
             'phone' => '9999999999',
             'age' => 31,
             'gender' => 'male',
-        ])->assertRedirect(route('tenant.patients.show', $patient));
+        ])->assertRedirect(route('tenant.customers.show', $customer));
 
-        $this->assertDatabaseHas('patients', [
-            'id' => $patient->id,
+        $this->assertDatabaseHas('customers', [
+            'id' => $customer->id,
             'name' => 'Rahul Kumar',
             'phone' => '+91 9999999999',
             'age' => 31,
@@ -62,14 +62,14 @@ class Phase10FeatureGapsATest extends TestCase
     {
         $u1 = $this->storeUser();
         $this->actingAs($u1);
-        $patient = Patient::create(['name' => 'Secret', 'phone' => '+91 1112223334']);
+        $customer = Customer::create(['name' => 'Secret', 'phone' => '+91 1112223334']);
 
         $u2 = $this->storeUser();
-        $this->actingAs($u2)->put(route('tenant.patients.update', $patient), [
+        $this->actingAs($u2)->put(route('tenant.customers.update', $customer), [
             'name' => 'Hijacked', 'country_code' => '+91', 'phone' => '9999999999',
         ])->assertNotFound();
 
-        $this->assertDatabaseHas('patients', ['id' => $patient->id, 'name' => 'Secret']);
+        $this->assertDatabaseHas('customers', ['id' => $customer->id, 'name' => 'Secret']);
     }
 
     // ---- Eye-record edit / update / destroy (NB-008b) ----
@@ -78,12 +78,12 @@ class Phase10FeatureGapsATest extends TestCase
     {
         $user = $this->storeUser();
         $this->actingAs($user);
-        $patient = Patient::create(['name' => 'Rahul', 'phone' => '+91 9876543210']);
-        $record = EyeRecord::create(['patient_id' => $patient->id, 'od_sph' => -1.0, 'recorded_by' => $user->id]);
+        $customer = Customer::create(['name' => 'Rahul', 'phone' => '+91 9876543210']);
+        $record = EyeRecord::create(['customer_id' => $customer->id, 'od_sph' => -1.0, 'recorded_by' => $user->id]);
 
         $this->actingAs($user)->put(route('tenant.eye-records.update', $record), [
             'od_sph' => -2.5, 'od_axis' => 45, 'pd' => 60,
-        ])->assertRedirect(route('tenant.patients.show', $patient));
+        ])->assertRedirect(route('tenant.customers.show', $customer));
 
         $this->assertDatabaseHas('eye_records', [
             'id' => $record->id, 'od_sph' => -2.5, 'od_axis' => 45,
@@ -94,11 +94,11 @@ class Phase10FeatureGapsATest extends TestCase
     {
         $user = $this->storeUser();
         $this->actingAs($user);
-        $patient = Patient::create(['name' => 'Rahul', 'phone' => '+91 9876543210']);
-        $record = EyeRecord::create(['patient_id' => $patient->id, 'od_sph' => -1.0, 'recorded_by' => $user->id]);
+        $customer = Customer::create(['name' => 'Rahul', 'phone' => '+91 9876543210']);
+        $record = EyeRecord::create(['customer_id' => $customer->id, 'od_sph' => -1.0, 'recorded_by' => $user->id]);
 
         $this->actingAs($user)->delete(route('tenant.eye-records.destroy', $record))
-            ->assertRedirect(route('tenant.patients.show', $patient));
+            ->assertRedirect(route('tenant.customers.show', $customer));
 
         $this->assertDatabaseMissing('eye_records', ['id' => $record->id]);
     }
@@ -107,8 +107,8 @@ class Phase10FeatureGapsATest extends TestCase
     {
         $u1 = $this->storeUser();
         $this->actingAs($u1);
-        $patient = Patient::create(['name' => 'Rahul', 'phone' => '+91 9876543210']);
-        $record = EyeRecord::create(['patient_id' => $patient->id, 'od_sph' => -1.0, 'recorded_by' => $u1->id]);
+        $customer = Customer::create(['name' => 'Rahul', 'phone' => '+91 9876543210']);
+        $record = EyeRecord::create(['customer_id' => $customer->id, 'od_sph' => -1.0, 'recorded_by' => $u1->id]);
 
         $u2 = $this->storeUser();
         $this->actingAs($u2)->delete(route('tenant.eye-records.destroy', $record))->assertNotFound();

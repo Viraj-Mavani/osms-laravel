@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Inventory;
 use App\Models\Order;
-use App\Models\Patient;
+use App\Models\Customer;
 use App\Models\Payment;
 use App\Models\StockMovement;
 use App\Models\Tenant;
@@ -43,13 +43,13 @@ class Phase11OrderLifecycleTest extends TestCase
     /** Place an order through the controller so stock + movements + advance are wired. */
     private function placeOrder(Inventory $item, int $qty = 2, float $advance = 0): Order
     {
-        $patient = Patient::create([
+        $customer = Customer::create([
             'tenant_id' => $this->user->tenant_id,
             'name' => 'Rahul', 'phone' => '+91 90000' . random_int(10000, 99999),
         ]);
 
         $this->actingAs($this->user)->post(route('tenant.orders.store'), [
-            'patient_id' => $patient->id,
+            'customer_id' => $customer->id,
             'advance_paid' => $advance,
             'items' => [['inventory_id' => $item->id, 'quantity' => $qty]],
         ])->assertRedirect();

@@ -18,7 +18,7 @@
     <div class="input-group flex-grow-1" style="min-width:16rem;max-width:26rem;">
         <span class="input-group-text bg-white"><i class="bi bi-search text-muted-foreground"></i></span>
         <input id="orderSearch" type="search" name="q" value="{{ $search }}" class="form-control"
-               placeholder="Search patient name or phone…  ( / )" autocomplete="off">
+               placeholder="Search customer name or phone…  ( / )" autocomplete="off">
     </div>
     <select name="status" class="form-select w-auto" onchange="document.getElementById('orderFilters').submit()">
         <option value="">All statuses</option>
@@ -44,7 +44,7 @@
             <table class="table align-middle mb-0 osms-orders-table">
                 <thead class="text-muted-foreground text-uppercase" style="font-size:.72rem;letter-spacing:.04em;">
                     <tr>
-                        <th class="ps-4">Order / Patient</th>
+                        <th class="ps-4">Order / Customer</th>
                         <th>Status</th>
                         <th class="text-end">{!! $sortLink('total_amount', 'Total') !!}</th>
                         <th class="text-end">{!! $sortLink('balance_due', 'Balance') !!}</th>
@@ -65,12 +65,12 @@
                         <tr role="button" onclick="window.location='{{ route('tenant.orders.show', $order) }}'">
                             <td class="ps-4">
                                 <div class="fw-semibold text-truncate" style="max-width:14rem;">
-                                    {{ $order->patient?->name ?? 'Unknown patient' }}
+                                    {{ $order->customer?->name ?? 'Unknown customer' }}
                                 </div>
                                 <div class="text-muted-foreground d-flex align-items-center gap-2" style="font-size:.74rem;">
                                     <span class="font-monospace">#{{ $num }}</span>
-                                    @if ($order->patient?->phone)
-                                        <span><i class="bi bi-telephone me-1"></i>{{ $order->patient->phone }}</span>
+                                    @if ($order->customer?->phone)
+                                        <span><i class="bi bi-telephone me-1"></i>{{ $order->customer->phone }}</span>
                                     @endif
                                 </div>
                             </td>

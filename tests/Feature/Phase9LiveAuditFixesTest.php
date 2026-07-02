@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Inventory;
-use App\Models\Patient;
+use App\Models\Customer;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,11 +28,11 @@ class Phase9LiveAuditFixesTest extends TestCase
     {
         $user = $this->storeUser();
 
-        $this->actingAs($user)->post(route('tenant.patients.store'), [
+        $this->actingAs($user)->post(route('tenant.customers.store'), [
             'name' => 'Bad Phone', 'country_code' => '+91', 'phone' => 'abc-invalid-phone',
         ])->assertSessionHasErrors('phone');
 
-        $this->assertDatabaseCount('patients', 0);
+        $this->assertDatabaseCount('customers', 0);
     }
 
     /** NB-003 — a valid number with a non-default country code is normalised and stored. */
@@ -40,11 +40,11 @@ class Phase9LiveAuditFixesTest extends TestCase
     {
         $user = $this->storeUser();
 
-        $this->actingAs($user)->post(route('tenant.patients.store'), [
+        $this->actingAs($user)->post(route('tenant.customers.store'), [
             'name' => 'Good Phone', 'country_code' => '+1', 'phone' => '5551234567',
         ])->assertSessionHasNoErrors()->assertRedirect();
 
-        $this->assertDatabaseHas('patients', [
+        $this->assertDatabaseHas('customers', [
             'phone' => '+1 5551234567',
             'tenant_id' => $user->tenant_id,
         ]);
@@ -70,9 +70,9 @@ class Phase9LiveAuditFixesTest extends TestCase
     {
         $user = $this->storeUser();
         $this->actingAs($user);
-        $patient = Patient::create(['name' => 'Priya', 'phone' => '+91 9876543210']);
+        $customer = Customer::create(['name' => 'Priya', 'phone' => '+91 9876543210']);
 
-        $this->actingAs($user)->post(route('tenant.eye-records.store', $patient), [])
+        $this->actingAs($user)->post(route('tenant.eye-records.store', $customer), [])
             ->assertSessionHasErrors('od_sph');
 
         $this->assertDatabaseCount('eye_records', 0);
@@ -83,9 +83,9 @@ class Phase9LiveAuditFixesTest extends TestCase
     {
         $user = $this->storeUser();
         $this->actingAs($user);
-        $patient = Patient::create(['name' => 'Priya', 'phone' => '+91 9876543211']);
+        $customer = Customer::create(['name' => 'Priya', 'phone' => '+91 9876543211']);
 
-        $this->actingAs($user)->post(route('tenant.eye-records.store', $patient), ['od_sph' => -1.5])
+        $this->actingAs($user)->post(route('tenant.eye-records.store', $customer), ['od_sph' => -1.5])
             ->assertSessionHasNoErrors()->assertRedirect();
 
         $this->assertDatabaseCount('eye_records', 1);

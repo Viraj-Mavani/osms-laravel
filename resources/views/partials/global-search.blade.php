@@ -6,7 +6,7 @@
                 <div class="d-flex align-items-center gap-2 px-3 py-2 border-bottom">
                     <i class="bi bi-search text-muted-foreground"></i>
                     <input type="text" id="globalSearchInput" class="form-control border-0 shadow-none"
-                           placeholder="Search patients, inventory, orders…" autocomplete="off" data-barcode-target>
+                           placeholder="Search customers, inventory, orders…" autocomplete="off" data-barcode-target>
                     <kbd class="bg-light text-muted-foreground border small">Esc</kbd>
                 </div>
                 <div id="globalSearchResults" class="p-2" style="max-height:60vh;overflow-y:auto;">
@@ -56,12 +56,12 @@
     function render(data, loading, q) {
         if (loading) { out.innerHTML = '<p class="text-center text-muted-foreground py-4 mb-0 small">Searching…</p>'; return; }
         if (!data) { out.innerHTML = '<p class="text-center text-muted-foreground py-4 mb-0 small">Type to search across your store.</p>'; return; }
-        const total = data.patients.length + data.inventory.length + data.orders.length;
+        const total = data.customers.length + data.inventory.length + data.orders.length;
         if (total === 0) { out.innerHTML = `<p class="text-center text-muted-foreground py-4 mb-0 small">No results — try a different name, phone, or SKU.</p>`; return; }
         let html = '';
-        if (data.patients.length) {
-            html += '<p class="section-label px-3 pt-2 mb-1">Patients</p>';
-            data.patients.forEach(p => html += row(p.url, 'bi-person', `<span class="fw-medium">${esc(p.name)}</span>`, esc(p.phone)));
+        if (data.customers.length) {
+            html += '<p class="section-label px-3 pt-2 mb-1">Customers</p>';
+            data.customers.forEach(p => html += row(p.url, 'bi-person', `<span class="fw-medium">${esc(p.name)}</span>`, esc(p.phone)));
         }
         if (data.inventory.length) {
             html += '<p class="section-label px-3 pt-2 mb-1">Inventory</p>';
@@ -71,7 +71,7 @@
         }
         if (data.orders.length) {
             html += '<p class="section-label px-3 pt-2 mb-1">Orders</p>';
-            data.orders.forEach(o => html += row(o.url, 'bi-cart3', `<span class="fw-medium">${esc(o.patient_name)||'—'}</span>`,
+            data.orders.forEach(o => html += row(o.url, 'bi-cart3', `<span class="fw-medium">${esc(o.customer_name)||'—'}</span>`,
                 money(o.total_amount) + (o.balance_due > 0 ? ` · <span class="text-danger">${money(o.balance_due)} due</span>` : '')));
         }
         out.innerHTML = html;

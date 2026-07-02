@@ -71,18 +71,55 @@ order money-model. Pricing semantics (Task 3.1) is folded into the order money-m
 
 ## FT-Customers — Unified customer entity + inline auto-register (Task 1)
 
-- **Status:** 🔵 Planned (foundational — highest churn, lowest math risk).
-- **Priority:** High.
-- **Scope:** Rename `patients` → `customers`; "patient" becomes a derived role (has ≥ 1 eye record).
-  `orders.patient_id` → `customer_id`; `eye_records.patient_id` → `customer_id`. Order builder gains a
-  combined "search existing **or** type name + phone" control that **find-or-creates** the customer on
-  submit — no separate registration step. One "Customers" section with a "Patients" filter.
-- **Impact analysis + full butterfly list:** [QA_TESTING_REPORT_3.md](QA_TESTING_REPORT_3.md) → Task 1.
-- **Key risks:** data-preserving migration (orders keep their contact); route renames
-  (`patients.*` → `customers.*`) are silent-break risk → grep-sweep + smoke test; large but mechanical
-  test/fixture churn.
-- **Tests:** `PhaseNNCustomersTest` — CRUD + tenant isolation, inline auto-register (find-or-create),
-  promote-to-patient via eye record, order for a plain customer, backfill correctness, global search.
+- **Status:** 🟡 Planned — spec locked 2026-07-01, ready to build.
+- **Priority:** High (foundational — highest churn, lowest math risk).
+
+### Guiding principle
+A **rename of the contact entity** (`patient` → `customer`), **not** a blanket find-replace. "Patient"
+survives as a **derived clinical role** = a customer with ≥ 1 eye record (derived via
+`eyeRecords()->exists()`, **no `is_patient` column** — can't drift). Clinical wording (eye records /
+prescriptions), the "Patients" filter/badge label, and `config/billing.php` marketing copy stay.
+
+### Locked decisions (this feature)
+- **No backward-compat shim** — clean rename; a new route **smoke test** + the full suite are the net.
+- **Migration** = data-preserving `Schema::rename` + `renameColumn`, verified on SQLite (tests) **and a
+  scratch MySQL DB before deploy** (SQLite-green ≠ MySQL-safe for FK/column renames).
+
+### Migration (#1 risk)
+New migration `..._rename_patients_to_customers` (never edit historical migrations — Hostinger already
+ran them): (1) `Schema::rename('patients','customers')` — FK refs in `orders`/`eye_records` follow the
+rename on both engines; (2) `renameColumn('patient_id'→'customer_id')` on `orders` + `eye_records`
+(Laravel 12 native); (3) reversible `down()`. Both FKs are `cascadeOnDelete` today — preserve exactly.
+
+### Inline auto-register (D1)
+`OrderController::store`/`update` accept **either** `customer_id` **or** `customer_name`+`customer_phone`
+(conditional `required_without`); inside the existing transaction, **find-or-create by
+`(tenant_id, phone)`** (`firstOrCreate`, backstopped by the unique index — no race dup; existing phone
+reuses, never overwrites the name). Alpine builder: search → if no match, "Add '{typed}'" reveals
+name+phone; hidden fields carry `customer_id` or the new pair.
+
+### Blast radius (verified; excludes regenerable `storage/framework/views`)
+Schema (`patients`, `orders.patient_id`, `eye_records.patient_id`) · Models (`Patient`,
+`Order.patient()`, `EyeRecord.patient()`, `Tenant.patients()`) · Controllers (`Patient`→`Customer`,
+`Order`, `EyeRecord`, `Search`, `Analytics`, tenant + superadmin `Dashboard`) · `StorePatientRequest`,
+`PatientsExport`, `LedgerExport`, `PurgeTrashedRecords` · routes (`patients.*`→`customers.*`) · views
+(`patients/*`, orders `create/edit/show/receipt-pdf/partials`, `analytics`, dashboards, sidebar,
+global-search) · ~11 test files (no `PatientFactory` — direct `create`) · `DatabaseSeeder`.
+
+### Build sequence (each green before the next)
+- **C-a — Foundation rename (atomic):** migration + models + controllers + routes + views + exports +
+  request + seeder + updated tests → suite green + MySQL dry-run.
+- **C-b — Inline auto-register** (server find-or-create + Alpine UI) + tests.
+- **C-c — "Patients" filter + badge** (derived role) on the customers index + tests.
+- **C-d — Smoke-test hardening** (extend `Phase1SmokeTest` to GET every tenant route, assert non-500) +
+  docs (this tracker → Done, deploy note).
+
+### Tests
+`PhaseNNCustomersTest` — CRUD + tenant isolation, inline auto-register (find-or-create + reuse by
+phone), promote-to-patient via eye record, order for a plain customer, migration/backfill correctness,
+global search returns customers, patients filter. Plus the route smoke test.
+
+**Impact analysis + full butterfly list:** [QA_TESTING_REPORT_3.md](QA_TESTING_REPORT_3.md) → Task 1.
 
 ---
 

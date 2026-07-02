@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Exports\InventoryExport;
-use App\Exports\PatientsExport;
+use App\Exports\CustomersExport;
 use App\Models\Inventory;
-use App\Models\Patient;
+use App\Models\Customer;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,9 +41,9 @@ class Phase13ExportTest extends TestCase
         ], $attrs));
     }
 
-    private function makePatient(string $name = 'Rahul'): Patient
+    private function makePatient(string $name = 'Rahul'): Customer
     {
-        return Patient::create([
+        return Customer::create([
             'tenant_id' => $this->user->tenant_id,
             'name' => $name, 'phone' => '+91 90000' . random_int(10000, 99999),
         ]);
@@ -112,12 +112,12 @@ class Phase13ExportTest extends TestCase
         $this->makePatient('Bob');
 
         $other = Tenant::create(['store_name' => 'Other']);
-        Patient::create(['tenant_id' => $other->id, 'name' => 'Zara', 'phone' => '+91 9111100000']);
+        Customer::create(['tenant_id' => $other->id, 'name' => 'Zara', 'phone' => '+91 9111100000']);
 
         $this->actingAs($this->user);
 
-        $this->assertCount(2, (new PatientsExport())->collection());
-        $this->assertCount(1, (new PatientsExport(q: 'Alice'))->collection());
+        $this->assertCount(2, (new CustomersExport())->collection());
+        $this->assertCount(1, (new CustomersExport(q: 'Alice'))->collection());
     }
 
     public function test_patients_export_excludes_archived(): void
@@ -127,7 +127,7 @@ class Phase13ExportTest extends TestCase
         $gone->delete();
 
         $this->actingAs($this->user);
-        $this->assertCount(1, (new PatientsExport())->collection());
+        $this->assertCount(1, (new CustomersExport())->collection());
     }
 
     // ---- Download routes ----
@@ -150,9 +150,9 @@ class Phase13ExportTest extends TestCase
         Excel::fake();
         $this->makePatient();
 
-        $this->actingAs($this->user)->get(route('tenant.patients.export'))->assertOk();
+        $this->actingAs($this->user)->get(route('tenant.customers.export'))->assertOk();
 
-        Excel::assertDownloaded('patients-20260701-120000.xlsx');
+        Excel::assertDownloaded('customers-20260701-120000.xlsx');
         Carbon::setTestNow();
     }
 }

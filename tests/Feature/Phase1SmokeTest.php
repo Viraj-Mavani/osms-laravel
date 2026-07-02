@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Patient;
+use App\Models\Customer;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -72,14 +72,14 @@ class Phase1SmokeTest extends TestCase
         $userB = User::factory()->create(['tenant_id' => $tenantB->id, 'role' => 'store_admin']);
 
         $this->actingAs($userA);
-        Patient::create(['name' => 'Patient A', 'phone' => '111']);
+        Customer::create(['name' => 'Patient A', 'phone' => '111']);
 
         // User B must not see Store A's data through the global scope.
         $this->actingAs($userB);
-        $this->assertSame(0, Patient::count());
+        $this->assertSame(0, Customer::count());
 
         $this->actingAs($userA);
-        $this->assertSame(1, Patient::count());
+        $this->assertSame(1, Customer::count());
     }
 
     public function test_non_superadmin_blocked_from_platform_panel(): void

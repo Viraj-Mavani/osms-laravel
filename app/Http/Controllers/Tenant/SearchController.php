@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
 use App\Models\Inventory;
 use App\Models\Order;
-use App\Models\Patient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,12 +16,12 @@ class SearchController extends Controller
         $q = trim((string) $request->query('q', ''));
 
         if ($q === '') {
-            return response()->json(['patients' => [], 'inventory' => [], 'orders' => []]);
+            return response()->json(['customers' => [], 'inventory' => [], 'orders' => []]);
         }
 
         $isPhoneLike = preg_match('/^[+0-9 ()\-]{4,}$/', $q) && preg_match('/\d{4,}/', $q);
 
-        $patients = Patient::query()
+        $customers = Customer::query()
             ->when($isPhoneLike,
                 fn ($query) => $query->where('phone', 'like', "%{$q}%"),
                 fn ($query) => $query->where(fn ($s) =>
@@ -39,16 +39,16 @@ class SearchController extends Controller
             ->limit(8)
             ->get(['id', 'sku', 'barcode', 'brand', 'model_name', 'stock_qty']);
 
-        $orders = Order::with('patient:id,name')
-            ->whereHas('patient', fn ($s) => $s->where('name', 'like', "%{$q}%"))
+        $orders = Order::with('customer:id,name')
+            ->whereHas('customer', fn ($s) => $s->where('name', 'like', "%{$q}%"))
             ->latest()
             ->limit(6)
-            ->get(['id', 'patient_id', 'total_amount', 'balance_due', 'status', 'created_at']);
+            ->get(['id', 'customer_id', 'total_amount', 'balance_due', 'status', 'created_at']);
 
         return response()->json([
-            'patients' => $patients->map(fn ($p) => [
+            'customers' => $customers->map(fn ($p) => [
                 'id' => $p->id, 'name' => $p->name, 'phone' => $p->phone,
-                'url' => route('tenant.patients.show', $p),
+                'url' => route('tenant.customers.show', $p),
             ]),
             'inventory' => $inventory->map(fn ($i) => [
                 'id' => $i->id, 'sku' => $i->sku, 'brand' => $i->brand,
@@ -58,7 +58,7 @@ class SearchController extends Controller
             'orders' => $orders->map(fn ($o) => [
                 'id' => $o->id, 'status' => $o->status,
                 'total_amount' => (float) $o->total_amount, 'balance_due' => (float) $o->balance_due,
-                'patient_name' => $o->patient?->name,
+                'customer_name' => $o->customer?->name,
                 'url' => route('tenant.orders.show', $o),
             ]),
         ]);

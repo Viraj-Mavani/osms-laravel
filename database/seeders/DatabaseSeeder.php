@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Customer;
 use App\Models\EyeRecord;
 use App\Models\Inventory;
 use App\Models\Order;
-use App\Models\Patient;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -66,24 +66,24 @@ class DatabaseSeeder extends Seeder
             'stock_qty' => $r[5], 'min_alert_qty' => 5,
         ]));
 
-        $patients = collect([
+        $customers = collect([
             ['Rahul Kumar', '9876543210', 34, 'male'],
             ['Anjali Verma', '9988776655', 28, 'female'],
             ['Imran Sheikh', '9090909090', 45, 'male'],
-        ])->map(fn ($p) => Patient::create([
+        ])->map(fn ($p) => Customer::create([
             'name' => $p[0], 'phone' => $p[1], 'age' => $p[2], 'gender' => $p[3],
         ]));
 
-        // Eye record + order for the first patient
+        // Eye record + order for the first customer
         $rx = EyeRecord::create([
-            'patient_id' => $patients[0]->id, 'recorded_by' => $owner->id,
+            'customer_id' => $customers[0]->id, 'recorded_by' => $owner->id,
             'od_sph' => -1.50, 'od_cyl' => -0.75, 'od_axis' => 90, 'od_va' => '6/6',
             'os_sph' => -1.25, 'os_cyl' => -0.50, 'os_axis' => 85, 'os_va' => '6/6',
             'pd' => 62, 'notes' => 'Annual checkup. Stable Rx.',
         ]);
 
         $order = Order::create([
-            'patient_id' => $patients[0]->id, 'eye_record_id' => $rx->id,
+            'customer_id' => $customers[0]->id, 'eye_record_id' => $rx->id,
             'status' => 'ready_for_pickup',
             'total_amount' => $inventory[0]->selling_price + $inventory[2]->selling_price,
             'advance_paid' => 2000,
@@ -95,7 +95,7 @@ class DatabaseSeeder extends Seeder
 
         // A delivered order so analytics has data
         $delivered = Order::create([
-            'patient_id' => $patients[1]->id, 'status' => 'delivered',
+            'customer_id' => $customers[1]->id, 'status' => 'delivered',
             'total_amount' => $inventory[1]->selling_price, 'advance_paid' => $inventory[1]->selling_price,
         ]);
         $delivered->items()->create([

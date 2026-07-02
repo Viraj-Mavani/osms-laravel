@@ -5,7 +5,7 @@
     @php
         $num = strtoupper(substr($order->id, 0, 8));
         $rx = $order->eyeRecord;
-        $p = $order->patient;
+        $p = $order->customer;
         $nz = fn ($v) => is_null($v) ? '—' : $v;
     @endphp
     <style>
@@ -45,12 +45,12 @@
         </tr>
     </table>
 
-    {{-- Patient + Rx --}}
+    {{-- Customer + Rx --}}
     <table style="margin-top:16px;">
         <tr>
             <td style="width:48%; vertical-align:top; padding-right:8px;">
                 <div class="box">
-                    <div class="muted small" style="text-transform:uppercase;">Patient</div>
+                    <div class="muted small" style="text-transform:uppercase;">Customer</div>
                     <div style="font-weight:bold; font-size:14px;">{{ $p?->name }}</div>
                     @if ($p?->phone)<div class="muted small">{{ $p->phone }}</div>@endif
                     @if ($p?->age)<div class="muted small">{{ $p->age }} years · {{ $p->gender ?? '—' }}</div>@endif
